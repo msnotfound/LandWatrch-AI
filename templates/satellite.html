@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block title %}Satellite Feed{% endblock %}
-{% block header_title %}Satellite Imagery{% endblock %}
-{% block breadcrumb %}Satellite Feed & Detection{% endblock %}
+{% block header_title %}Sentinel-2 Satellite Imagery{% endblock %}
+{% block breadcrumb %}Live Satellite Feed & Analysis{% endblock %}
 
 {% block content %}
 <!-- Controls Bar -->
@@ -20,18 +20,16 @@
                 <label
                     style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px;">Band
                     Combination</label>
-                <select class="select-input" id="band-select">
-                    <option value="rgb">True Color (RGB)</option>
+                <select class="select-input" id="band-select" onchange="changeBand()">
+                    <option value="true_color">True Color (RGB)</option>
                     <option value="ndvi">NDVI (Vegetation)</option>
-                    <option value="urban">Urban (SWIR)</option>
-                    <option value="false-color">False Color (NIR)</option>
                 </select>
             </div>
             <div style="margin-left: auto; display: flex; gap: var(--space-3);">
-                <button class="btn btn-secondary" onclick="toggleCompare()">
+                <button class="btn btn-secondary" id="btn-compare" onclick="toggleCompare()">
                     <i data-lucide="columns-2"></i> Compare Mode
                 </button>
-                <button class="btn btn-detect" onclick="runDetectionOnArea()">
+                <button class="btn btn-detect" id="btn-detect" onclick="runDetectionOnArea()">
                     <i data-lucide="scan"></i> Run AI Detection
                 </button>
             </div>
@@ -46,34 +44,59 @@
         <div class="card-header">
             <h2 class="card-title">
                 <span class="title-icon"><i data-lucide="satellite"></i></span>
-                Sentinel-2 Imagery
+                Sentinel-2 Live Imagery
             </h2>
             <div class="card-actions">
-                <span style="font-size: 0.75rem; color: var(--text-muted);" id="scene-info">Select an area to view
+                <span style="font-size: 0.75rem; color: var(--text-muted);" id="scene-info">Select an area to fetch real
                     imagery</span>
             </div>
         </div>
         <div class="card-body no-pad" style="position: relative;">
-            <div id="sat-map" style="width: 100%; height: 500px;"></div>
+            <!-- Single view -->
+            <div id="single-view">
+                <div id="sat-map" style="width: 100%; height: 500px;"></div>
+            </div>
+            <!-- Compare view (hidden) -->
+            <div id="compare-view" style="display: none; height: 500px;">
+                <div style="display: flex; height: 100%;">
+                    <div style="flex: 1; position: relative;">
+                        <div id="compare-map-left" style="width: 100%; height: 100%;"></div>
+                        <div
+                            style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; z-index: 1000;">
+                            True Color</div>
+                    </div>
+                    <div style="width: 3px; background: var(--primary-500);"></div>
+                    <div style="flex: 1; position: relative;">
+                        <div id="compare-map-right" style="width: 100%; height: 100%;"></div>
+                        <div
+                            style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; z-index: 1000;">
+                            NDVI</div>
+                    </div>
+                </div>
+            </div>
             <!-- Overlay Controls -->
             <div style="position: absolute; bottom: 16px; left: 16px; z-index: 1000; display: flex; gap: 8px;">
-                <button class="btn btn-sm btn-secondary" onclick="toggleGrid()"
-                    style="background: var(--glass-bg); backdrop-filter: blur(10px);">
-                    <i data-lucide="grid-2x2"></i> Grid
-                </button>
                 <button class="btn btn-sm btn-secondary" onclick="toggleBoundaries()"
                     style="background: var(--glass-bg); backdrop-filter: blur(10px);">
                     <i data-lucide="square"></i> Boundaries
                 </button>
-                <button class="btn btn-sm btn-secondary" onclick="toggleViolations()"
+                <button class="btn btn-sm btn-secondary" onclick="fetchSentinelImage()" id="btn-fetch-img"
                     style="background: var(--glass-bg); backdrop-filter: blur(10px);">
-                    <i data-lucide="alert-triangle"></i> Violations
+                    <i data-lucide="image"></i> Fetch Imagery
                 </button>
+            </div>
+            <!-- Loading overlay -->
+            <div id="imagery-loading"
+                style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 1001; display: none; justify-content: center; align-items: center; flex-direction: column; gap: 12px;">
+                <div
+                    style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: var(--primary-500); border-radius: 50%; animation: spin 1s linear infinite;">
+                </div>
+                <span style="color: #fff; font-size: 0.85rem;" id="loading-text">Fetching Sentinel-2 imagery...</span>
             </div>
         </div>
     </div>
 
-    <!-- Scene List + Info -->
+    <!-- Side Panel -->
     <div style="display: flex; flex-direction: column; gap: var(--space-4);">
         <!-- Detection Status -->
         <div class="card" id="detection-status-card">
@@ -90,23 +113,26 @@
                     <div style="font-weight: 600;">Ready to Analyze</div>
                     <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Select an area and click
                         "Run AI Detection"</div>
+                    <div style="font-size: 0.7rem; color: var(--accent-cyan); margin-top: 8px;">Uses real Sentinel-2 +
+                        CSIDC data</div>
                 </div>
             </div>
         </div>
 
-        <!-- Available Scenes -->
+        <!-- Real Sentinel-2 Scenes -->
         <div class="card" style="flex: 1;">
             <div class="card-header">
                 <h2 class="card-title">
                     <span class="title-icon"><i data-lucide="layers"></i></span>
-                    Available Scenes
+                    Sentinel-2 Scenes
                 </h2>
             </div>
             <div class="card-body no-pad" id="scenes-list" style="max-height: 350px; overflow-y: auto;">
                 <div class="empty-state" style="padding: var(--space-6);">
                     <div class="empty-state-icon">🛰️</div>
                     <div class="empty-state-title">Select an Area</div>
-                    <div class="empty-state-desc">Choose an industrial area to view available Sentinel-2 scenes.</div>
+                    <div class="empty-state-desc">Choose an area then click "Fetch Imagery" to search real Sentinel-2
+                        scenes from Copernicus CDSE.</div>
                 </div>
             </div>
         </div>
@@ -118,10 +144,10 @@
     <div class="card-header">
         <h2 class="card-title">
             <span class="title-icon"><i data-lucide="git-compare"></i></span>
-            Change Detection Results
+            Detection Findings
         </h2>
         <div class="card-actions">
-            <span class="badge badge-info" id="changes-count">0 changes</span>
+            <span class="badge badge-info" id="changes-count">0 findings</span>
         </div>
     </div>
     <div class="card-body">
@@ -131,21 +157,21 @@
     </div>
 </div>
 
-<!-- Satellite Imagery Stats -->
-<div class="stats-grid stagger mb-6" style="grid-template-columns: repeat(4, 1fr);">
+<!-- Satellite Stats -->
+<div class="stats-grid stagger mb-6" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
     <div class="stat-card" style="--card-accent: var(--accent-cyan);">
         <div class="stat-card-header">
             <div class="stat-card-icon cyan">🛰️</div>
         </div>
-        <div class="stat-card-value" id="stat-scenes">--</div>
-        <div class="stat-card-label">Total Scenes Available</div>
+        <div class="stat-card-value">Sentinel-2</div>
+        <div class="stat-card-label">Satellite Source</div>
     </div>
     <div class="stat-card" style="--card-accent: var(--accent-green);">
         <div class="stat-card-header">
             <div class="stat-card-icon green">✅</div>
         </div>
-        <div class="stat-card-value" id="stat-processed">--</div>
-        <div class="stat-card-label">Scenes Processed</div>
+        <div class="stat-card-value">L2A</div>
+        <div class="stat-card-label">Processing Level</div>
     </div>
     <div class="stat-card" style="--card-accent: var(--accent-blue);">
         <div class="stat-card-header">
@@ -161,31 +187,49 @@
         <div class="stat-card-value">5 days</div>
         <div class="stat-card-label">Revisit Frequency</div>
     </div>
+    <div class="stat-card" style="--card-accent: var(--accent-purple);">
+        <div class="stat-card-header">
+            <div class="stat-card-icon purple">🔑</div>
+        </div>
+        <div class="stat-card-value">CDSE</div>
+        <div class="stat-card-label">API: Copernicus</div>
+    </div>
 </div>
+<style>
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes blink {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.3;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    let satMap, areasData = [], scenesData = [];
-    let showBoundaries = true, showViolationMarkers = true, showGridOverlay = false;
-    let boundaryLayer, violationLayer, gridLayer;
+    let satMap, areasData = [];
+    let showBounds = true, boundaryLayer, sentinelLayer;
+    let compareMode = false, compareMapLeft, compareMapRight;
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Init map
-        satMap = L.map('sat-map', {
-            zoomControl: true,
-            attributionControl: false
-        }).setView([21.25, 81.63], 13);
-
-        // Satellite tiles
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19
-        }).addTo(satMap);
+        // Init main map
+        satMap = L.map('sat-map', { zoomControl: true, attributionControl: false }).setView([21.25, 81.63], 13);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(satMap);
 
         // Load areas
         const areasRes = await fetch('/api/areas');
         areasData = await areasRes.json();
-
         const select = document.getElementById('sat-area-select');
         areasData.forEach(a => {
             const opt = document.createElement('option');
@@ -194,13 +238,6 @@
             select.appendChild(opt);
         });
 
-        // Load all scenes
-        const scenesRes = await fetch('/api/satellite/scenes');
-        scenesData = await scenesRes.json();
-        document.getElementById('stat-scenes').textContent = scenesData.length;
-        document.getElementById('stat-processed').textContent = scenesData.filter(s => s.processed).length;
-
-        // Auto-load first area
         loadSatelliteData();
     });
 
@@ -208,313 +245,234 @@
         const areaId = parseInt(document.getElementById('sat-area-select').value);
         const area = areasData.find(a => a.id === areaId);
         if (!area) return;
-
-        // Center map on area
         satMap.setView(area.center, 14, { animate: true });
 
-        // Load scenes
-        const scenes = scenesData.filter(s => s.area_id === areaId);
-        renderScenesList(scenes);
+        // Draw boundary
+        if (area.boundary && area.boundary.length > 2) {
+            if (boundaryLayer) satMap.removeLayer(boundaryLayer);
+            boundaryLayer = L.polygon(area.boundary.map(c => [c[1], c[0]]), {
+                color: '#0d8de0', fillColor: '#0d8de0', fillOpacity: 0.05, weight: 2, dashArray: '6,4'
+            }).addTo(satMap);
+        }
 
-        // Load plots for boundary overlay
-        const plotsRes = await fetch(`/api/plots?area_id=${areaId}`);
-        const plots = await plotsRes.json();
-        renderBoundaryOverlay(plots);
+        document.getElementById('scene-info').textContent = `${area.name} — Click "Fetch Imagery" for real Sentinel-2`;
+    }
 
-        // Load violations
-        const violRes = await fetch(`/api/violations?area_id=${areaId}&limit=20`);
-        const violations = await violRes.json();
-        renderViolationMarkers(violations);
+    async function fetchSentinelImage() {
+        const areaId = parseInt(document.getElementById('sat-area-select').value);
+        const band = document.getElementById('band-select').value;
+        const area = areasData.find(a => a.id === areaId);
+        if (!area) return;
 
-        // Update scene info
-        const latest = scenes.find(s => s.processed);
-        if (latest) {
-            document.getElementById('scene-info').textContent = `Latest: ${latest.capture_date} · Cloud: ${latest.cloud_cover}% · ${latest.source}`;
+        // Show loading
+        const loader = document.getElementById('imagery-loading');
+        loader.style.display = 'flex';
+        document.getElementById('loading-text').textContent = `Fetching ${band === 'ndvi' ? 'NDVI' : 'True Color'} from Copernicus CDSE...`;
+
+        try {
+            // First search for scenes
+            const searchRes = await fetch(`/api/satellite/search?area_id=${areaId}&max_cloud=40`);
+            const searchData = await searchRes.json();
+
+            if (searchData.error) {
+                throw new Error(searchData.error);
+            }
+
+            // Display found scenes
+            if (searchData.scenes && searchData.scenes.length > 0) {
+                renderScenesList(searchData.scenes, area.name);
+                const latestDate = searchData.scenes[0].datetime?.split('T')[0] || null;
+
+                // Fetch actual imagery
+                const imgRes = await fetch(`/api/satellite/image?area_id=${areaId}&type=${band}&date=${latestDate || ''}`);
+                if (imgRes.ok) {
+                    const blob = await imgRes.blob();
+                    const imgUrl = URL.createObjectURL(blob);
+
+                    // Create image overlay on map
+                    if (sentinelLayer) satMap.removeLayer(sentinelLayer);
+                    const bbox = area.bbox || [area.center[1] - 0.03, area.center[0] - 0.03, area.center[1] + 0.03, area.center[0] + 0.03];
+                    const bounds = [[bbox[1], bbox[0]], [bbox[3], bbox[2]]];
+                    sentinelLayer = L.imageOverlay(imgUrl, bounds, { opacity: 0.85 }).addTo(satMap);
+                    satMap.fitBounds(bounds);
+
+                    document.getElementById('scene-info').textContent =
+                        `${area.name} · ${latestDate} · ${band === 'ndvi' ? 'NDVI' : 'True Color'} · Cloud: ${searchData.scenes[0].cloud_cover}%`;
+                    showToast('Imagery Loaded', `Real Sentinel-2 ${band === 'ndvi' ? 'NDVI' : 'True Color'} loaded for ${area.name}`, 'success');
+                } else {
+                    const err = await imgRes.json();
+                    throw new Error(err.error || 'Image fetch failed');
+                }
+            } else {
+                showToast('No Scenes', 'No cloud-free Sentinel-2 scenes found for this area', 'warning');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error', e.message || 'Failed to fetch Sentinel-2 imagery. Check credentials.', 'error');
+        } finally {
+            loader.style.display = 'none';
         }
     }
 
-    function renderScenesList(scenes) {
-        const container = document.getElementById('scenes-list');
+    function changeBand() {
+        // If imagery is already loaded, re-fetch with new band
+        if (sentinelLayer) fetchSentinelImage();
+    }
 
+    function renderScenesList(scenes, areaName) {
+        const container = document.getElementById('scenes-list');
         container.innerHTML = scenes.map((s, i) => `
         <div class="alert-item" style="animation: fade-in 0.3s ease-out ${i * 0.05}s both;">
-            <div class="alert-severity-icon" style="background: ${s.processed ? 'var(--accent-green-soft)' : 'var(--accent-amber-soft)'}; color: ${s.processed ? 'var(--accent-green)' : 'var(--accent-amber)'};">
-                ${s.processed ? '✅' : '⏳'}
-            </div>
+            <div class="alert-severity-icon" style="background: var(--accent-green-soft); color: var(--accent-green);">🛰️</div>
             <div class="alert-content">
-                <div class="alert-title" style="font-size: 0.85rem;">${s.capture_date}</div>
-                <div class="alert-desc">${s.source} · ${s.resolution_m}m · Bands: ${s.bands.join(', ')}</div>
-                <div class="alert-meta">
-                    <span>☁️ Cloud: ${s.cloud_cover}%</span>
-                    <span class="badge ${s.processed ? 'badge-low' : 'badge-pending'}">${s.processed ? 'Processed' : 'Pending'}</span>
-                </div>
+                <div class="alert-title" style="font-size: 0.85rem;">${s.datetime ? s.datetime.split('T')[0] : 'Unknown'}</div>
+                <div class="alert-desc">${s.platform || 'Sentinel-2'} · 10m · Cloud: ${(s.cloud_cover || 0).toFixed(1)}%</div>
             </div>
+            <div style="font-size: 0.7rem; color: var(--accent-cyan);">Real</div>
         </div>
-    `).join('');
-    }
-
-    function renderBoundaryOverlay(plots) {
-        if (boundaryLayer) satMap.removeLayer(boundaryLayer);
-        boundaryLayer = L.layerGroup();
-
-        plots.forEach(plot => {
-            if (!plot.boundary || plot.boundary.length < 4) return;
-
-            const color = plot.status === 'compliant' ? '#10b981' :
-                plot.status === 'violation' ? '#ef4444' :
-                    plot.status === 'vacant' ? '#8b5cf6' : '#f59e0b';
-
-            const latlngs = plot.boundary.map(b => [b[0], b[1]]);
-            const poly = L.polygon(latlngs, {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.15,
-                weight: 1.5,
-                dashArray: plot.status === 'violation' ? '4, 6' : null
-            });
-
-            poly.bindPopup(`
-            <div style="font-family: 'Inter', sans-serif; font-size: 12px;">
-                <strong>${plot.plot_number}</strong> — ${plot.industry_name}<br>
-                Status: <span style="color: ${color}; font-weight: 600; text-transform: uppercase;">${plot.status}</span><br>
-                Area: ${plot.reference_area_sqm} sqm → ${plot.current_area_sqm} sqm
-            </div>
-        `);
-
-            boundaryLayer.addLayer(poly);
-        });
-
-        if (showBoundaries) boundaryLayer.addTo(satMap);
-    }
-
-    function renderViolationMarkers(violations) {
-        if (violationLayer) satMap.removeLayer(violationLayer);
-        violationLayer = L.layerGroup();
-
-        violations.forEach(v => {
-            const icon = L.divIcon({
-                className: '',
-                html: `
-                <div style="position: relative; width: 30px; height: 30px;">
-                    <div style="
-                        position: absolute; inset: 0;
-                        border: 2px solid #ef4444;
-                        border-radius: 50%;
-                        animation: map-pulse 2s ease-out infinite;
-                    "></div>
-                    <div style="
-                        position: absolute; top: 50%; left: 50%;
-                        transform: translate(-50%, -50%);
-                        width: 18px; height: 18px;
-                        background: #ef4444;
-                        border-radius: 50%;
-                        display: flex; align-items: center; justify-content: center;
-                        font-size: 10px; color: white;
-                        box-shadow: 0 0 12px rgba(239,68,68,0.5);
-                    ">⚠️</div>
-                </div>
-            `,
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            });
-
-            const typeLabels = {
-                'encroachment': 'Encroachment',
-                'unauthorized_construction': 'Unauthorized Construction',
-                'boundary_deviation': 'Boundary Deviation',
-                'vacant_unused': 'Vacant/Unused',
-                'road_encroachment': 'Road Encroachment'
-            };
-
-            const marker = L.marker([v.lat, v.lng], { icon });
-            marker.bindPopup(`
-            <div style="font-family: 'Inter', sans-serif; min-width: 200px;">
-                <div style="font-weight: 700; color: #ef4444; margin-bottom: 6px;">${typeLabels[v.violation_type] || v.violation_type}</div>
-                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">${v.description}</div>
-                <div style="font-size: 11px;">
-                    <div>Plot: <strong>${v.plot_number}</strong></div>
-                    <div>Confidence: <strong>${(v.confidence * 100).toFixed(0)}%</strong></div>
-                    <div>Deviation: <strong>${v.deviation_percent}%</strong></div>
-                </div>
-            </div>
-        `);
-
-            violationLayer.addLayer(marker);
-        });
-
-        if (showViolationMarkers) violationLayer.addTo(satMap);
+        `).join('');
     }
 
     function toggleBoundaries() {
-        showBoundaries = !showBoundaries;
-        if (showBoundaries && boundaryLayer) boundaryLayer.addTo(satMap);
+        showBounds = !showBounds;
+        if (showBounds && boundaryLayer) boundaryLayer.addTo(satMap);
         else if (boundaryLayer) satMap.removeLayer(boundaryLayer);
     }
 
-    function toggleViolations() {
-        showViolationMarkers = !showViolationMarkers;
-        if (showViolationMarkers && violationLayer) violationLayer.addTo(satMap);
-        else if (violationLayer) satMap.removeLayer(violationLayer);
-    }
-
-    function toggleGrid() {
-        if (gridLayer) {
-            satMap.removeLayer(gridLayer);
-            gridLayer = null;
-            return;
-        }
-
-        gridLayer = L.layerGroup();
-        const center = satMap.getCenter();
-        const step = 0.005;
-
-        for (let i = -5; i <= 5; i++) {
-            L.polyline([
-                [center.lat + i * step, center.lng - 5 * step],
-                [center.lat + i * step, center.lng + 5 * step]
-            ], { color: 'rgba(59, 130, 246, 0.3)', weight: 1, dashArray: '4, 4' }).addTo(gridLayer);
-
-            L.polyline([
-                [center.lat - 5 * step, center.lng + i * step],
-                [center.lat + 5 * step, center.lng + i * step]
-            ], { color: 'rgba(59, 130, 246, 0.3)', weight: 1, dashArray: '4, 4' }).addTo(gridLayer);
-        }
-
-        gridLayer.addTo(satMap);
-    }
-
     function toggleCompare() {
-        showToast('Compare Mode', 'Side-by-side comparison coming soon in v1.1', 'info');
+        compareMode = !compareMode;
+        const singleView = document.getElementById('single-view');
+        const compareView = document.getElementById('compare-view');
+        const btn = document.getElementById('btn-compare');
+
+        if (compareMode) {
+            singleView.style.display = 'none';
+            compareView.style.display = 'block';
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-secondary');
+
+            const area = areasData.find(a => a.id === parseInt(document.getElementById('sat-area-select').value));
+            if (!area) return;
+
+            // Init side-by-side maps
+            if (!compareMapLeft) {
+                compareMapLeft = L.map('compare-map-left', { attributionControl: false }).setView(area.center, 14);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(compareMapLeft);
+            } else {
+                compareMapLeft.setView(area.center, 14);
+            }
+            if (!compareMapRight) {
+                compareMapRight = L.map('compare-map-right', { attributionControl: false }).setView(area.center, 14);
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(compareMapRight);
+            } else {
+                compareMapRight.setView(area.center, 14);
+            }
+
+            // Sync map movements
+            compareMapLeft.on('moveend', () => { if (compareMode) compareMapRight.setView(compareMapLeft.getCenter(), compareMapLeft.getZoom(), { animate: false }); });
+            compareMapRight.on('moveend', () => { if (compareMode) compareMapLeft.setView(compareMapRight.getCenter(), compareMapRight.getZoom(), { animate: false }); });
+
+            showToast('Compare Mode', 'Side-by-side view active. Left: True Color, Right: NDVI. Fetch imagery for both.', 'info');
+        } else {
+            singleView.style.display = 'block';
+            compareView.style.display = 'none';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+            satMap.invalidateSize();
+        }
     }
 
     async function runDetectionOnArea() {
         const areaId = parseInt(document.getElementById('sat-area-select').value);
         const statusEl = document.getElementById('detection-status');
+        const btn = document.getElementById('btn-detect');
+        btn.disabled = true;
 
-        // Show processing animation
+        // Show processing
         statusEl.innerHTML = `
         <div style="padding: var(--space-4);">
-            <div class="scan-effect" style="background: var(--bg-elevated); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; margin-bottom: var(--space-4);">
+            <div style="background: var(--bg-elevated); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; margin-bottom: var(--space-4);">
                 <div style="font-size: 2rem; margin-bottom: 8px; animation: spin 2s linear infinite;">🛰️</div>
-                <div style="font-weight: 600; color: var(--text-accent);">Processing Satellite Imagery...</div>
-                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Running AI detection models</div>
-                <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+                <div style="font-weight: 600; color: var(--text-accent);">Analyzing with Real Data...</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Querying Sentinel-2 + CSIDC GIS</div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="progress-step" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem;">
-                    <span style="color: var(--accent-green);">✅</span>
-                    <span>Loading satellite scene</span>
-                </div>
-                <div class="progress-step" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem;">
-                    <span style="color: var(--accent-green);">✅</span>
-                    <span>Pre-processing imagery</span>
-                </div>
-                <div class="progress-step" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem;">
-                    <span style="animation: blink 1s infinite;">⏳</span>
-                    <span style="color: var(--text-accent);">Running boundary extraction...</span>
-                </div>
-                <div class="progress-step" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted);">
-                    <span>⬜</span>
-                    <span>Change detection analysis</span>
-                </div>
-                <div class="progress-step" style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted);">
-                    <span>⬜</span>
-                    <span>Generating reports</span>
-                </div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem;"><span style="color: var(--accent-green);">✅</span><span>Loading CSIDC boundary data</span></div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem;"><span style="animation: blink 1s infinite;">⏳</span><span style="color: var(--text-accent);">Searching Sentinel-2 scenes...</span></div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted);"><span>⬜</span><span>Comparing boundaries vs satellite</span></div>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted);"><span>⬜</span><span>Generating findings report</span></div>
             </div>
-            <style>@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }</style>
-        </div>
-    `;
+        </div>`;
 
-        showToast('Detection Started', 'AI models analyzing satellite imagery...', 'detection');
+        showToast('Detection Started', 'Running real analysis using Sentinel-2 + CSIDC data...', 'detection');
 
         try {
             const res = await fetch(`/api/detection/run?area_id=${areaId}`);
             const data = await res.json();
 
-            setTimeout(() => {
-                statusEl.innerHTML = `
-                <div style="padding: var(--space-4);">
-                    <div style="background: var(--accent-green-soft); border: 1px solid rgba(16,185,129,0.3); border-radius: var(--radius-md); padding: var(--space-4); text-align: center; margin-bottom: var(--space-4);">
-                        <div style="font-size: 1.5rem; margin-bottom: 4px;">✅</div>
-                        <div style="font-weight: 600; color: var(--accent-green);">Detection Complete</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${data.processing_time_seconds}s · ${data.model_version}</div>
+            if (data.error) throw new Error(data.error);
+
+            statusEl.innerHTML = `
+            <div style="padding: var(--space-4);">
+                <div style="background: var(--accent-green-soft); border: 1px solid rgba(16,185,129,0.3); border-radius: var(--radius-md); padding: var(--space-4); text-align: center; margin-bottom: var(--space-4);">
+                    <div style="font-size: 1.5rem; margin-bottom: 4px;">✅</div>
+                    <div style="font-weight: 600; color: var(--accent-green);">Detection Complete</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">${data.model_version} · ${data.satellite_checked ? 'Satellite verified' : 'CSIDC data only'}</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 1.2rem; font-weight: 800;">${data.results.plots_analyzed}</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Plots Analyzed</div>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
-                            <div style="font-size: 1.2rem; font-weight: 800;">${data.results.plots_analyzed}</div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted);">Plots Analyzed</div>
-                        </div>
-                        <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
-                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-red);">${data.results.encroachments_detected}</div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted);">Encroachments</div>
-                        </div>
-                        <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
-                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-amber);">${data.results.new_constructions}</div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted);">New Builds</div>
-                        </div>
-                        <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
-                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-blue);">${(data.results.confidence_avg * 100).toFixed(0)}%</div>
-                            <div style="font-size: 0.65rem; color: var(--text-muted);">Avg Confidence</div>
-                        </div>
+                    <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-red);">${data.results.encroachments_detected}</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Potential Issues</div>
                     </div>
-                    <div style="margin-top: 12px; font-size: 0.7rem; color: var(--text-muted); text-align: center; font-family: var(--font-mono);">
-                        Run ID: ${data.run_id}
+                    <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-blue);">${(data.results.confidence_avg * 100).toFixed(0)}%</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Confidence</div>
+                    </div>
+                    <div style="background: var(--bg-elevated); padding: 12px; border-radius: var(--radius-md); text-align: center;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-cyan);">${data.scene_date || 'N/A'}</div>
+                        <div style="font-size: 0.65rem; color: var(--text-muted);">Scene Date</div>
                     </div>
                 </div>
-            `;
+                <div style="margin-top: 12px; font-size: 0.7rem; color: var(--text-muted); text-align: center; font-family: var(--font-mono);">Run ID: ${data.run_id}</div>
+            </div>`;
 
-                // Show change detection card
-                showChangeDetection(data);
+            // Show findings
+            if (data.results.findings && data.results.findings.length > 0) {
+                showFindings(data.results.findings);
+            }
 
-                showToast('Detection Complete', `Found ${data.results.encroachments_detected} encroachments, ${data.results.new_constructions} new constructions`, 'success');
-            }, 3000);
+            showToast('Detection Complete', `Analyzed ${data.results.plots_analyzed} plots — ${data.results.encroachments_detected} issues found`, 'success');
         } catch (e) {
-            showToast('Detection Failed', 'Could not complete detection run', 'error');
+            console.error(e);
+            statusEl.innerHTML = `<div style="padding: var(--space-4); text-align: center;"><div style="font-size: 2rem;">❌</div><div style="font-weight: 600; color: var(--accent-red);">Detection Failed</div><div style="font-size: 0.8rem; color: var(--text-muted);">${e.message}</div></div>`;
+            showToast('Detection Failed', e.message || 'Could not complete detection', 'error');
+        } finally {
+            btn.disabled = false;
         }
     }
 
-    function showChangeDetection(data) {
+    function showFindings(findings) {
         const card = document.getElementById('change-detection-card');
         card.style.display = 'block';
+        document.getElementById('changes-count').textContent = `${findings.length} finding${findings.length === 1 ? '' : 's'}`;
 
-        const totalChanges = data.results.encroachments_detected + data.results.new_constructions + data.results.boundary_changes;
-        document.getElementById('changes-count').textContent = `${totalChanges} changes detected`;
+        const iconMap = { 'potential_encroachment': '🚧', 'low_utilization': '🏚️', 'cloud_obstruction': '☁️' };
+        const colorMap = { 'high': '#ef4444', 'medium': '#f59e0b', 'low': '#3b82f6' };
 
-        const changes = [
-            ...Array(data.results.encroachments_detected).fill(null).map((_, i) => ({
-                type: 'Encroachment Detected',
-                icon: '🚧',
-                color: '#ef4444',
-                desc: `Boundary encroachment detected in plot zone ${i + 1}. Area deviation exceeds 5% threshold.`,
-                confidence: (85 + Math.random() * 14).toFixed(0)
-            })),
-            ...Array(data.results.new_constructions).fill(null).map((_, i) => ({
-                type: 'New Construction',
-                icon: '🏗️',
-                color: '#f59e0b',
-                desc: `New building structure detected. Construction not present in previous scan.`,
-                confidence: (80 + Math.random() * 18).toFixed(0)
-            })),
-            ...Array(data.results.boundary_changes).fill(null).map((_, i) => ({
-                type: 'Boundary Change',
-                icon: '📐',
-                color: '#3b82f6',
-                desc: `Plot boundary modification detected compared to reference allotment map.`,
-                confidence: (75 + Math.random() * 20).toFixed(0)
-            }))
-        ];
-
-        document.getElementById('change-results').innerHTML = changes.map(c => `
-        <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); border-left: 3px solid ${c.color};">
+        document.getElementById('change-results').innerHTML = findings.map(f => `
+        <div style="background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); border-left: 3px solid ${colorMap[f.severity] || '#64748b'};">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                <span style="font-size: 1.2rem;">${c.icon}</span>
-                <span style="font-weight: 600; color: ${c.color};">${c.type}</span>
-                <span class="badge badge-info" style="margin-left: auto;">${c.confidence}%</span>
+                <span style="font-size: 1.2rem;">${iconMap[f.type] || '⚠️'}</span>
+                <span style="font-weight: 600; color: ${colorMap[f.severity] || '#64748b'};">${f.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
+                <span class="badge badge-${f.severity === 'high' ? 'critical' : f.severity}" style="margin-left: auto;">${f.severity}</span>
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">${c.desc}</p>
-        </div>
-    `).join('');
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">${f.description}</p>
+            <div style="font-size: 0.7rem; color: var(--accent-cyan); margin-top: 8px;">Source: ${f.source || 'CSIDC + Sentinel-2'}</div>
+        </div>`).join('');
 
         card.scrollIntoView({ behavior: 'smooth' });
     }

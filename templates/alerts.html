@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
 {% block title %}Alerts{% endblock %}
-{% block header_title %}Violation Alerts{% endblock %}
-{% block breadcrumb %}Compliance / Alerts{% endblock %}
+{% block header_title %}System Alerts{% endblock %}
+{% block breadcrumb %}Monitoring / Alerts{% endblock %}
 
 {% block content %}
 <!-- Filters -->
@@ -12,9 +12,8 @@
             style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);">
             <div class="filters-bar">
                 <div class="filter-chip active" onclick="filterAlerts('all', this)">All</div>
-                <div class="filter-chip" onclick="filterAlerts('unread', this)">🔵 Unread</div>
-                <div class="filter-chip" onclick="filterAlerts('critical', this)">🔴 Critical</div>
-                <div class="filter-chip" onclick="filterAlerts('high', this)">🟠 High</div>
+                <div class="filter-chip" onclick="filterAlerts('new', this)">🔵 New</div>
+                <div class="filter-chip" onclick="filterAlerts('high', this)">🔴 High</div>
                 <div class="filter-chip" onclick="filterAlerts('medium', this)">🟡 Medium</div>
                 <div class="filter-chip" onclick="filterAlerts('low', this)">🟢 Low</div>
             </div>
@@ -31,17 +30,10 @@
 </div>
 
 <!-- Alert Stats -->
-<div class="stats-grid stagger mb-6" style="grid-template-columns: repeat(4, 1fr);">
+<div class="stats-grid stagger mb-6" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
     <div class="stat-card" style="--card-accent: var(--accent-red);">
         <div class="stat-card-header">
             <div class="stat-card-icon red">🔴</div>
-        </div>
-        <div class="stat-card-value" id="stat-critical-alerts">--</div>
-        <div class="stat-card-label">Critical Alerts</div>
-    </div>
-    <div class="stat-card" style="--card-accent: #f97316;">
-        <div class="stat-card-header">
-            <div class="stat-card-icon amber">🟠</div>
         </div>
         <div class="stat-card-value" id="stat-high-alerts">--</div>
         <div class="stat-card-label">High Priority</div>
@@ -61,9 +53,16 @@
         <div class="stat-card-value" id="stat-low-alerts">--</div>
         <div class="stat-card-label">Low Priority</div>
     </div>
+    <div class="stat-card" style="--card-accent: var(--accent-blue);">
+        <div class="stat-card-header">
+            <div class="stat-card-icon blue">📊</div>
+        </div>
+        <div class="stat-card-value" id="stat-total-alerts">--</div>
+        <div class="stat-card-label">Total Alerts</div>
+    </div>
 </div>
 
-<!-- Alerts Table -->
+<!-- Alerts List -->
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">
@@ -71,24 +70,37 @@
             All Alerts
             <span class="badge badge-info" id="total-count">0</span>
         </h2>
-        <select class="select-input" id="sort-select" onchange="sortAlerts(this.value)">
-            <option value="newest">Newest First</option>
-            <option value="severity">By Severity</option>
-            <option value="area">By Area</option>
-        </select>
+        <div style="display: flex; align-items: center; gap: var(--space-3);">
+            <span style="font-size: 0.7rem; color: var(--accent-cyan);">Source: Sentinel-2 + CSIDC</span>
+            <select class="select-input" id="sort-select" onchange="sortAlerts(this.value)">
+                <option value="newest">Newest First</option>
+                <option value="severity">By Severity</option>
+                <option value="area">By Area</option>
+            </select>
+        </div>
     </div>
-    <div class="card-body no-pad">
-        <table class="data-table" id="alerts-table">
+    <div class="card-body no-pad" id="alerts-container">
+        <!-- No alerts message -->
+        <div class="empty-state" id="empty-alerts" style="padding: var(--space-8);">
+            <div class="empty-state-icon">🔔</div>
+            <div class="empty-state-title">No Alerts</div>
+            <div class="empty-state-desc">
+                Alerts are generated when you run AI Detection or generate reports.<br>
+                Go to <a href="/satellite" style="color: var(--accent-cyan);">Satellite Feed</a> to run a detection
+                scan.
+            </div>
+        </div>
+        <table class="data-table" id="alerts-table" style="display: none;">
             <thead>
                 <tr>
                     <th style="width: 40px;"></th>
                     <th>Severity</th>
                     <th>Type</th>
-                    <th>Area / Plot</th>
+                    <th>Area</th>
                     <th>Description</th>
-                    <th>Confidence</th>
+                    <th>Source</th>
                     <th>Status</th>
-                    <th>Time</th>
+                    <th>Date</th>
                     <th style="width: 50px;">Actions</th>
                 </tr>
             </thead>
@@ -104,112 +116,115 @@
     let allAlerts = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
-        const res = await fetch('/api/alerts?limit=50');
+        const res = await fetch('/api/alerts?limit=100');
         allAlerts = await res.json();
         renderAlerts(allAlerts);
         updateAlertStats(allAlerts);
     });
 
     const typeLabels = {
-        'encroachment': 'Encroachment',
-        'unauthorized_construction': 'Unauthorized Construction',
-        'boundary_deviation': 'Boundary Deviation',
-        'vacant_unused': 'Vacant Plot',
-        'road_encroachment': 'Road Encroachment'
+        'unavailable_plots': 'Unavailable Plots',
+        'low_occupancy': 'Low Occupancy',
+        'cloud_obstruction': 'Cloud Obstruction',
+        'legacy_area': 'Legacy Area Warning',
+        'potential_encroachment': 'Potential Encroachment',
+        'low_utilization': 'Low Utilization',
+        'encroachment': 'Encroachment'
     };
 
     const typeIcons = {
-        'encroachment': '🚧',
-        'unauthorized_construction': '🏗️',
-        'boundary_deviation': '📐',
-        'vacant_unused': '🏚️',
-        'road_encroachment': '🛣️'
+        'unavailable_plots': '🚫',
+        'low_occupancy': '🏚️',
+        'cloud_obstruction': '☁️',
+        'legacy_area': '📜',
+        'potential_encroachment': '🚧',
+        'low_utilization': '📉',
+        'encroachment': '🚧'
     };
 
     function renderAlerts(alerts) {
         const tbody = document.getElementById('alerts-tbody');
+        const table = document.getElementById('alerts-table');
+        const empty = document.getElementById('empty-alerts');
         document.getElementById('total-count').textContent = alerts.length;
 
+        if (alerts.length === 0) {
+            table.style.display = 'none';
+            empty.style.display = 'flex';
+            return;
+        }
+
+        table.style.display = 'table';
+        empty.style.display = 'none';
+
         tbody.innerHTML = alerts.map((a, i) => `
-        <tr class="${a.status === 'unread' ? 'unread' : ''}" style="animation: fade-in 0.3s ease-out ${i * 0.03}s both;">
+        <tr style="animation: fade-in 0.3s ease-out ${i * 0.03}s both;">
             <td>
-                <div style="width: 8px; height: 8px; border-radius: 50; background: ${a.status === 'unread' ? 'var(--primary-500)' : 'transparent'}; margin: auto;"></div>
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: ${a.status === 'new' ? 'var(--primary-500)' : 'transparent'}; margin: auto;"></div>
             </td>
-            <td><span class="badge badge-${a.severity}">${a.severity}</span></td>
+            <td><span class="badge badge-${a.severity === 'high' ? 'critical' : a.severity}">${a.severity || 'info'}</span></td>
             <td>
                 <div style="display: flex; align-items: center; gap: 6px;">
-                    <span>${typeIcons[a.violation_type] || '⚠️'}</span>
-                    <span style="color: var(--text-primary); font-weight: 500;">${typeLabels[a.violation_type] || a.violation_type}</span>
+                    <span>${typeIcons[a.type] || '⚠️'}</span>
+                    <span style="color: var(--text-primary); font-weight: 500;">${typeLabels[a.type] || a.type || 'Alert'}</span>
                 </div>
             </td>
             <td>
-                <div style="font-weight: 500; color: var(--text-primary);">${a.area_name}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">${a.plot_number}</div>
+                <div style="font-weight: 500; color: var(--text-primary);">${a.area_name || 'N/A'}</div>
             </td>
             <td>
-                <div class="truncate" style="max-width: 280px;">${a.description}</div>
+                <div class="truncate" style="max-width: 300px;">${a.description || ''}</div>
             </td>
-            <td>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <div class="progress-bar" style="width: 60px;">
-                        <div class="progress-bar-fill ${a.confidence > 0.9 ? 'green' : a.confidence > 0.8 ? 'amber' : 'red'}" style="width: ${a.confidence * 100}%;"></div>
-                    </div>
-                    <span style="font-family: var(--font-mono); font-size: 0.8rem;">${(a.confidence * 100).toFixed(0)}%</span>
-                </div>
-            </td>
+            <td style="font-size: 0.7rem; color: var(--accent-cyan);">${a.source || 'Analysis'}</td>
             <td>
                 <select class="select-input" style="font-size: 0.7rem; padding: 2px 24px 2px 8px;" onchange="updateStatus(${a.id}, this.value)">
-                    <option value="unread" ${a.status === 'unread' ? 'selected' : ''}>Unread</option>
+                    <option value="new" ${a.status === 'new' ? 'selected' : ''}>New</option>
                     <option value="read" ${a.status === 'read' ? 'selected' : ''}>Read</option>
                     <option value="acknowledged" ${a.status === 'acknowledged' ? 'selected' : ''}>Acknowledged</option>
                     <option value="resolved" ${a.status === 'resolved' ? 'selected' : ''}>Resolved</option>
                 </select>
             </td>
             <td style="white-space: nowrap; font-size: 0.75rem; color: var(--text-muted);">
-                ${formatAlertTime(a.created_at)}
+                ${a.date || ''}
             </td>
             <td>
-                <button class="btn-ghost" style="padding: 4px;" data-tooltip="View on Map" onclick="window.location.href='/map?area=${a.area_name}'">
+                <button class="btn-ghost" style="padding: 4px;" data-tooltip="View on Map" onclick="window.location.href='/map?area=${encodeURIComponent(a.area_name || '')}'">
                     <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
                 </button>
             </td>
         </tr>
-    `).join('');
+        `).join('');
 
         lucide.createIcons();
     }
 
     function updateAlertStats(alerts) {
-        const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+        const counts = { high: 0, medium: 0, low: 0 };
         alerts.forEach(a => { if (counts[a.severity] !== undefined) counts[a.severity]++; });
-        document.getElementById('stat-critical-alerts').textContent = counts.critical;
         document.getElementById('stat-high-alerts').textContent = counts.high;
         document.getElementById('stat-medium-alerts').textContent = counts.medium;
         document.getElementById('stat-low-alerts').textContent = counts.low;
+        document.getElementById('stat-total-alerts').textContent = alerts.length;
     }
 
     function filterAlerts(filter, chip) {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
-
         let filtered = allAlerts;
-        if (filter === 'unread') {
-            filtered = allAlerts.filter(a => a.status === 'unread');
-        } else if (filter !== 'all') {
-            filtered = allAlerts.filter(a => a.severity === filter);
-        }
+        if (filter === 'new') filtered = allAlerts.filter(a => a.status === 'new');
+        else if (filter !== 'all') filtered = allAlerts.filter(a => a.severity === filter);
         renderAlerts(filtered);
     }
 
     function sortAlerts(sortBy) {
         let sorted = [...allAlerts];
         if (sortBy === 'severity') {
-            const order = { critical: 0, high: 1, medium: 2, low: 3 };
-            sorted.sort((a, b) => order[a.severity] - order[b.severity]);
+            const order = { high: 0, medium: 1, low: 2 };
+            sorted.sort((a, b) => (order[a.severity] || 3) - (order[b.severity] || 3));
         } else if (sortBy === 'area') {
-            sorted.sort((a, b) => a.area_name.localeCompare(b.area_name));
+            sorted.sort((a, b) => (a.area_name || '').localeCompare(b.area_name || ''));
         } else {
-            sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            sorted.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         }
         renderAlerts(sorted);
     }
@@ -227,9 +242,10 @@
     }
 
     function exportAlerts() {
-        const csv = ['Severity,Type,Area,Plot,Description,Confidence,Status,Time'];
+        if (allAlerts.length === 0) { showToast('No Data', 'No alerts to export', 'warning'); return; }
+        const csv = ['Severity,Type,Area,Description,Source,Status,Date'];
         allAlerts.forEach(a => {
-            csv.push(`${a.severity},${a.violation_type},${a.area_name},${a.plot_number},"${a.description}",${a.confidence},${a.status},${a.created_at}`);
+            csv.push(`${a.severity},${a.type},"${a.area_name}","${a.description}",${a.source || ''},${a.status},${a.date}`);
         });
         const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
@@ -238,19 +254,6 @@
         link.download = `landwatch_alerts_${new Date().toISOString().split('T')[0]}.csv`;
         link.click();
         showToast('Export Complete', 'Alerts exported as CSV', 'success');
-    }
-
-    function formatAlertTime(iso) {
-        try {
-            const dt = new Date(iso);
-            const now = new Date();
-            const diffHrs = Math.round((now - dt) / (1000 * 60 * 60));
-            if (diffHrs < 1) return 'Just now';
-            if (diffHrs < 24) return `${diffHrs}h ago`;
-            return `${Math.round(diffHrs / 24)}d ago`;
-        } catch {
-            return '';
-        }
     }
 </script>
 {% endblock %}

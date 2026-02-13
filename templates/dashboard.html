@@ -10,55 +10,55 @@
     <div class="stat-card" style="--card-accent: var(--accent-blue);" id="stat-areas">
         <div class="stat-card-header">
             <div class="stat-card-icon blue">🏭</div>
-            <div class="stat-change positive">↑ Active</div>
+            <div class="stat-change positive">CSIDC GIS</div>
         </div>
         <div class="stat-card-value" id="val-areas">--</div>
         <div class="stat-card-label">Industrial Areas Monitored</div>
     </div>
 
-    <div class="stat-card" style="--card-accent: var(--accent-green);" id="stat-compliance">
+    <div class="stat-card" style="--card-accent: var(--accent-green);" id="stat-plots">
         <div class="stat-card-header">
-            <div class="stat-card-icon green">✅</div>
-            <div class="stat-change positive" id="change-compliance">↑ 2.4%</div>
+            <div class="stat-card-icon green">📊</div>
+            <div class="stat-change positive">Real Data</div>
         </div>
-        <div class="stat-card-value" id="val-compliance">--%</div>
-        <div class="stat-card-label">Average Compliance Rate</div>
+        <div class="stat-card-value" id="val-plots">--</div>
+        <div class="stat-card-label">Total Plots Tracked</div>
     </div>
 
-    <div class="stat-card" style="--card-accent: var(--accent-red);" id="stat-violations">
+    <div class="stat-card" style="--card-accent: var(--accent-cyan);" id="stat-occupancy">
+        <div class="stat-card-header">
+            <div class="stat-card-icon cyan">📈</div>
+            <div class="stat-change positive" id="change-occupancy">Avg</div>
+        </div>
+        <div class="stat-card-value" id="val-occupancy">--%</div>
+        <div class="stat-card-label">Average Occupancy Rate</div>
+    </div>
+
+    <div class="stat-card" style="--card-accent: var(--accent-purple);" id="stat-area-acres">
+        <div class="stat-card-header">
+            <div class="stat-card-icon purple">🗺️</div>
+            <div class="stat-change positive">Total</div>
+        </div>
+        <div class="stat-card-value" id="val-area-acres">--</div>
+        <div class="stat-card-label">Total Area (Acres)</div>
+    </div>
+
+    <div class="stat-card" style="--card-accent: var(--accent-amber);" id="stat-alerts">
+        <div class="stat-card-header">
+            <div class="stat-card-icon amber">🔔</div>
+            <div class="stat-change" id="change-alerts">Live</div>
+        </div>
+        <div class="stat-card-value" id="val-alerts">--</div>
+        <div class="stat-card-label">Sentinel-2 Alerts</div>
+    </div>
+
+    <div class="stat-card" style="--card-accent: var(--accent-red);" id="stat-high-risk">
         <div class="stat-card-header">
             <div class="stat-card-icon red">⚠️</div>
-            <div class="stat-change negative" id="change-violations">↑ 5</div>
+            <div class="stat-change negative">Attention</div>
         </div>
-        <div class="stat-card-value" id="val-violations">--</div>
-        <div class="stat-card-label">Active Violations</div>
-    </div>
-
-    <div class="stat-card" style="--card-accent: var(--accent-amber);" id="stat-critical">
-        <div class="stat-card-header">
-            <div class="stat-card-icon amber">🔴</div>
-            <div class="stat-change negative" id="change-critical">Urgent</div>
-        </div>
-        <div class="stat-card-value" id="val-critical">--</div>
-        <div class="stat-card-label">Critical Alerts</div>
-    </div>
-
-    <div class="stat-card" style="--card-accent: var(--accent-cyan);" id="stat-scans">
-        <div class="stat-card-header">
-            <div class="stat-card-icon cyan">🛰️</div>
-            <div class="stat-change positive">This Month</div>
-        </div>
-        <div class="stat-card-value" id="val-scans">--</div>
-        <div class="stat-card-label">Satellite Scans Processed</div>
-    </div>
-
-    <div class="stat-card" style="--card-accent: var(--accent-purple);" id="stat-savings">
-        <div class="stat-card-header">
-            <div class="stat-card-icon purple">💰</div>
-            <div class="stat-change positive">vs Manual</div>
-        </div>
-        <div class="stat-card-value" id="val-savings">--%</div>
-        <div class="stat-card-label">Cost Reduction Achieved</div>
+        <div class="stat-card-value" id="val-high-risk">--</div>
+        <div class="stat-card-label">High Risk Areas</div>
     </div>
 </div>
 
@@ -92,10 +92,11 @@
                 <span class="title-icon"><i data-lucide="building-2"></i></span>
                 Monitored Areas
             </h2>
-            <select class="select-input" id="area-sort">
+            <select class="select-input" id="area-sort" onchange="sortAreas(this.value)">
                 <option value="risk">By Risk</option>
-                <option value="compliance">By Compliance</option>
+                <option value="plots">By Plot Count</option>
                 <option value="name">By Name</option>
+                <option value="occupancy">By Occupancy</option>
             </select>
         </div>
         <div class="card-body no-pad" style="max-height: 460px; overflow-y: auto;">
@@ -104,40 +105,40 @@
     </div>
 </div>
 
-<!-- Second Row: Violations + Compliance Chart -->
+<!-- Second Row: Plot Status + Risk Distribution -->
 <div class="grid-2 mb-6">
-    <!-- Violations Chart -->
+    <!-- Plot Status Chart -->
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">
                 <span class="title-icon"><i data-lucide="pie-chart"></i></span>
-                Violations by Type
+                Plot Status Distribution
             </h2>
         </div>
         <div class="card-body">
             <div class="chart-container" style="height: 280px;">
-                <canvas id="violations-chart"></canvas>
+                <canvas id="plot-status-chart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Compliance Trend -->
+    <!-- Risk Assessment -->
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">
-                <span class="title-icon"><i data-lucide="trending-up"></i></span>
-                Compliance Trend (12 Months)
+                <span class="title-icon"><i data-lucide="shield-alert"></i></span>
+                Risk Assessment
             </h2>
         </div>
         <div class="card-body">
             <div class="chart-container" style="height: 280px;">
-                <canvas id="compliance-chart"></canvas>
+                <canvas id="risk-chart"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Third Row: Recent Alerts + Detection Log -->
+<!-- Third Row: Recent Alerts + Top Areas -->
 <div class="grid-2 mb-6">
     <!-- Recent Alerts -->
     <div class="card">
@@ -153,17 +154,17 @@
         </div>
     </div>
 
-    <!-- Risk Assessment -->
+    <!-- Top Areas by Plot Count -->
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">
-                <span class="title-icon"><i data-lucide="shield-alert"></i></span>
-                Risk Assessment
+                <span class="title-icon"><i data-lucide="bar-chart-3"></i></span>
+                Top Areas by Plot Count
             </h2>
         </div>
         <div class="card-body">
             <div class="chart-container" style="height: 300px;">
-                <canvas id="risk-chart"></canvas>
+                <canvas id="top-areas-chart"></canvas>
             </div>
         </div>
     </div>
@@ -172,6 +173,8 @@
 
 {% block scripts %}
 <script>
+    let dashboardAreas = [];
+
     document.addEventListener('DOMContentLoaded', async () => {
         // ─── Load Dashboard Stats ────────────────────────────────────
         try {
@@ -179,14 +182,14 @@
             const stats = await statsRes.json();
 
             document.getElementById('val-areas').textContent = stats.total_areas;
-            document.getElementById('val-compliance').textContent = stats.avg_compliance + '%';
-            document.getElementById('val-violations').textContent = stats.active_violations;
-            document.getElementById('val-critical').textContent = stats.critical_violations;
-            document.getElementById('val-scans').textContent = stats.scans_this_month;
-            document.getElementById('val-savings').textContent = stats.cost_savings_percent + '%';
+            document.getElementById('val-plots').textContent = stats.total_plots.toLocaleString();
+            document.getElementById('val-occupancy').textContent = stats.avg_occupancy + '%';
+            document.getElementById('val-area-acres').textContent = stats.total_area_acres.toLocaleString();
+            document.getElementById('val-alerts').textContent = stats.new_alerts;
+            document.getElementById('val-high-risk').textContent = stats.areas_by_risk.high;
 
-            // Violations Doughnut Chart
-            createViolationsChart(stats.violation_types);
+            // Plot Status Donut
+            if (stats.plot_statuses) createPlotStatusChart(stats.plot_statuses);
             createRiskChart(stats.areas_by_risk);
         } catch (e) {
             console.error('Failed to load stats:', e);
@@ -195,10 +198,10 @@
         // ─── Load Areas ──────────────────────────────────────────────
         try {
             const areasRes = await fetch('/api/areas');
-            const areas = await areasRes.json();
-
-            renderAreasList(areas);
-            initDashboardMap(areas);
+            dashboardAreas = await areasRes.json();
+            renderAreasList(dashboardAreas);
+            initDashboardMap(dashboardAreas);
+            createTopAreasChart(dashboardAreas);
         } catch (e) {
             console.error('Failed to load areas:', e);
         }
@@ -211,15 +214,6 @@
         } catch (e) {
             console.error('Failed to load alerts:', e);
         }
-
-        // ─── Load Compliance History ─────────────────────────────────
-        try {
-            const histRes = await fetch('/api/compliance/history');
-            const history = await histRes.json();
-            createComplianceTrendChart(history);
-        } catch (e) {
-            console.error('Failed to load compliance history:', e);
-        }
     });
 
     // ─── Map ─────────────────────────────────────────────────────────
@@ -231,87 +225,60 @@
             attributionControl: false
         }).setView([21.5, 81.8], 7);
 
-        // Dark satellite tiles
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap © CARTO'
+            maxZoom: 19
         }).addTo(dashboardMap);
 
-        // Add area markers
         areas.forEach(area => {
             const color = area.risk_level === 'high' ? '#ef4444' :
                 area.risk_level === 'medium' ? '#f59e0b' : '#10b981';
 
-            // Circle for area
-            L.circle(area.center, {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.15,
-                radius: Math.max(800, Math.sqrt(area.total_plots || 20) * 400),
-                weight: 2
-            }).addTo(dashboardMap);
+            // Real boundary
+            if (area.boundary && area.boundary.length > 0) {
+                try {
+                    L.geoJSON({
+                        type: "Feature",
+                        geometry: { type: area.geometry_type || "MultiPolygon", coordinates: area.boundary }
+                    }, {
+                        style: { color, fillColor: color, fillOpacity: 0.1, weight: 1.5 }
+                    }).addTo(dashboardMap);
+                } catch (e) { }
+            }
 
-            // Marker with popup
             const icon = L.divIcon({
                 className: 'custom-marker',
                 html: `<div style="
-                width: 28px; height: 28px;
-                background: ${color};
-                border-radius: 50%;
+                width: 24px; height: 24px; background: ${color}; border-radius: 50%;
                 display: flex; align-items: center; justify-content: center;
-                font-size: 12px; font-weight: 700; color: white;
-                box-shadow: 0 0 12px ${color}80;
-                border: 2px solid rgba(255,255,255,0.3);
+                font-size: 10px; font-weight: 700; color: white;
+                box-shadow: 0 0 10px ${color}80; border: 2px solid rgba(255,255,255,0.3);
                 cursor: pointer;
-            ">${area.violations_count}</div>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
+            ">${area.total_plots}</div>`,
+                iconSize: [24, 24], iconAnchor: [12, 12]
             });
 
             L.marker(area.center, { icon }).addTo(dashboardMap)
                 .bindPopup(`
-                <div style="min-width: 220px; font-family: 'Inter', sans-serif;">
-                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px; color: #f1f5f9;">${area.name}</div>
-                    <div style="font-size: 12px; color: #94a3b8; margin-bottom: 6px;">${area.location || area.district || 'Chhattisgarh'}</div>
-                    <div style="font-size: 10px; color: #06b6d4; margin-bottom: 10px;">📡 ${area.data_source || 'CSIDC GIS'}</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
-                        <div>
-                            <div style="color: #64748b;">Plots</div>
-                            <div style="font-weight: 700; color: #f1f5f9;">${area.total_plots}</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b;">Area</div>
-                            <div style="font-weight: 700; color: #f1f5f9;">${area.area_acres} ac</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b;">Compliance</div>
-                            <div style="font-weight: 700; color: ${color};">${area.compliance_rate}%</div>
-                        </div>
-                        <div>
-                            <div style="color: #64748b;">Violations</div>
-                            <div style="font-weight: 700; color: ${color};">${area.violations_count}</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 10px;">
-                        <div style="height: 4px; border-radius: 99px; background: rgba(255,255,255,0.1);">
-                            <div style="height: 100%; width: ${area.compliance_rate}%; border-radius: 99px; background: ${color};"></div>
-                        </div>
+                <div style="min-width: 200px; font-family: 'Inter', sans-serif;">
+                    <div style="font-weight: 700; font-size: 13px; margin-bottom: 4px; color: #f1f5f9;">${area.name}</div>
+                    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">${area.location || area.district || 'Chhattisgarh'}</div>
+                    <div style="font-size: 10px; color: #06b6d4; margin-bottom: 8px;">📡 ${area.data_source || 'CSIDC GIS'}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 11px;">
+                        <div><div style="color: #64748b;">Plots</div><div style="font-weight: 700;">${area.total_plots}</div></div>
+                        <div><div style="color: #64748b;">Area</div><div style="font-weight: 700;">${area.area_acres} ac</div></div>
+                        <div><div style="color: #64748b;">Occupancy</div><div style="font-weight: 700; color: ${color};">${area.occupancy_rate}%</div></div>
+                        <div><div style="color: #64748b;">Risk</div><div style="font-weight: 700; color: ${color};">${area.risk_level}</div></div>
                     </div>
                 </div>
             `);
         });
 
-        // Fit bounds
         const bounds = areas.map(a => a.center);
-        if (bounds.length > 0) {
-            dashboardMap.fitBounds(bounds, { padding: [40, 40] });
-        }
+        if (bounds.length > 0) dashboardMap.fitBounds(bounds, { padding: [40, 40] });
     }
 
     function resetMapView() {
-        if (dashboardMap) {
-            dashboardMap.setView([21.5, 81.8], 8);
-        }
+        if (dashboardMap) dashboardMap.setView([21.5, 81.8], 8);
     }
 
     // ─── Areas List ──────────────────────────────────────────────────
@@ -319,7 +286,7 @@
         const container = document.getElementById('areas-list');
         const sorted = [...areas].sort((a, b) => {
             const riskOrder = { high: 0, medium: 1, low: 2 };
-            return riskOrder[a.risk_level] - riskOrder[b.risk_level];
+            return (riskOrder[a.risk_level] ?? 3) - (riskOrder[b.risk_level] ?? 3);
         });
 
         container.innerHTML = sorted.map(area => `
@@ -327,128 +294,59 @@
             <div class="area-color ${area.risk_level}"></div>
             <div class="area-info">
                 <div class="area-name">${area.name}</div>
-                <div class="area-location">${area.location || area.district || ''} · ${area.area_acres} acres</div>
+                <div class="area-location">${area.location || area.district || ''} · ${area.area_acres} ac</div>
             </div>
             <div class="area-stats">
                 <div class="area-stat-item">
-                    <div class="area-stat-value" style="color: ${complianceColor(area.compliance_rate)}">${area.compliance_rate}%</div>
-                    <div class="area-stat-label">Compliance</div>
+                    <div class="area-stat-value">${area.total_plots}</div>
+                    <div class="area-stat-label">Plots</div>
                 </div>
                 <div class="area-stat-item">
-                    <div class="area-stat-value text-red">${area.violations_count}</div>
-                    <div class="area-stat-label">Violations</div>
+                    <div class="area-stat-value" style="color: ${area.occupancy_rate > 60 ? 'var(--accent-green)' : 'var(--accent-amber)'}">${area.occupancy_rate}%</div>
+                    <div class="area-stat-label">Occupancy</div>
                 </div>
             </div>
         </div>
     `).join('');
     }
 
+    function sortAreas(by) {
+        let sorted = [...dashboardAreas];
+        if (by === 'risk') sorted.sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.risk_level] ?? 3) - ({ high: 0, medium: 1, low: 2 }[b.risk_level] ?? 3));
+        else if (by === 'plots') sorted.sort((a, b) => b.total_plots - a.total_plots);
+        else if (by === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+        else if (by === 'occupancy') sorted.sort((a, b) => b.occupancy_rate - a.occupancy_rate);
+        renderAreasList(sorted);
+    }
+
     // ─── Charts ──────────────────────────────────────────────────────
-    function createViolationsChart(violationTypes) {
-        const ctx = document.getElementById('violations-chart');
+    function createPlotStatusChart(statuses) {
+        const ctx = document.getElementById('plot-status-chart');
         if (!ctx) return;
 
-        const labels = {
-            'encroachment': 'Encroachment',
-            'unauthorized_construction': 'Unauthorized Build',
-            'boundary_deviation': 'Boundary Deviation',
-            'vacant_unused': 'Vacant/Unused',
-            'road_encroachment': 'Road Encroachment'
+        const colorMap = {
+            'allotted': '#10b981', 'available': '#8b5cf6',
+            'unavailable': '#ef4444', 'reserved': '#f59e0b',
+            'infrastructure': '#06b6d4', 'cancelled': '#64748b',
+            'other_land': '#a78bfa', 'other': '#475569', 'unknown': '#334155'
         };
+
+        const labels = Object.keys(statuses).map(k => k.charAt(0).toUpperCase() + k.slice(1));
+        const data = Object.values(statuses);
+        const colors = Object.keys(statuses).map(k => colorMap[k] || '#475569');
 
         new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: Object.keys(violationTypes).map(k => labels[k] || k),
-                datasets: [{
-                    data: Object.values(violationTypes),
-                    backgroundColor: [
-                        '#ef4444', '#f97316', '#f59e0b', '#8b5cf6', '#06b6d4'
-                    ],
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    spacing: 3
-                }]
+                labels: labels,
+                datasets: [{ data, backgroundColor: colors, borderWidth: 0, borderRadius: 4, spacing: 3 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
                 plugins: {
                     legend: {
                         position: 'right',
-                        labels: {
-                            color: '#94a3b8',
-                            font: { family: 'Inter', size: 11 },
-                            padding: 16,
-                            usePointStyle: true,
-                            pointStyleWidth: 8
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    function createComplianceTrendChart(history) {
-        const ctx = document.getElementById('compliance-chart');
-        if (!ctx) return;
-
-        // Group by month, average across areas
-        const monthlyAvg = {};
-        history.forEach(h => {
-            if (!monthlyAvg[h.month]) {
-                monthlyAvg[h.month] = { sum: 0, count: 0 };
-            }
-            monthlyAvg[h.month].sum += h.compliance_rate;
-            monthlyAvg[h.month].count++;
-        });
-
-        const months = Object.keys(monthlyAvg).sort();
-        const values = months.map(m => (monthlyAvg[m].sum / monthlyAvg[m].count).toFixed(1));
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: months.map(m => {
-                    const [y, mo] = m.split('-');
-                    return new Date(y, mo - 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
-                }),
-                datasets: [{
-                    label: 'Avg Compliance %',
-                    data: values,
-                    borderColor: '#0d8de0',
-                    backgroundColor: 'rgba(13, 141, 224, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: '#0d8de0',
-                    pointBorderColor: '#0f1523',
-                    pointBorderWidth: 2,
-                    borderWidth: 2.5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }
-                    },
-                    y: {
-                        min: 50,
-                        max: 100,
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: {
-                            color: '#64748b',
-                            font: { family: 'Inter', size: 10 },
-                            callback: v => v + '%'
-                        }
+                        labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 }
                     }
                 }
             }
@@ -466,37 +364,49 @@
                 datasets: [{
                     label: 'Areas',
                     data: [riskData.high, riskData.medium, riskData.low],
-                    backgroundColor: [
-                        'rgba(239, 68, 68, 0.7)',
-                        'rgba(245, 158, 11, 0.7)',
-                        'rgba(16, 185, 129, 0.7)'
-                    ],
+                    backgroundColor: ['rgba(239,68,68,0.7)', 'rgba(245,158,11,0.7)', 'rgba(16,185,129,0.7)'],
                     borderColor: ['#ef4444', '#f59e0b', '#10b981'],
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    barPercentage: 0.5
+                    borderWidth: 1, borderRadius: 8, barPercentage: 0.5
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false }
-                },
+                responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                plugins: { legend: { display: false } },
                 scales: {
-                    x: {
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: {
-                            color: '#64748b',
-                            font: { family: 'Inter', size: 10 },
-                            stepSize: 1
-                        }
-                    },
-                    y: {
-                        grid: { display: false },
-                        ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12, weight: 600 } }
-                    }
+                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { family: 'Inter', size: 10 }, stepSize: 5 } },
+                    y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Inter', size: 12, weight: 600 } } }
+                }
+            }
+        });
+    }
+
+    function createTopAreasChart(areas) {
+        const ctx = document.getElementById('top-areas-chart');
+        if (!ctx) return;
+
+        const topAreas = [...areas].sort((a, b) => b.total_plots - a.total_plots).slice(0, 10);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: topAreas.map(a => a.name.length > 15 ? a.name.slice(0, 14) + '…' : a.name),
+                datasets: [{
+                    label: 'Plots',
+                    data: topAreas.map(a => a.total_plots),
+                    backgroundColor: topAreas.map(a => {
+                        if (a.risk_level === 'high') return 'rgba(239,68,68,0.6)';
+                        if (a.risk_level === 'medium') return 'rgba(245,158,11,0.6)';
+                        return 'rgba(16,185,129,0.6)';
+                    }),
+                    borderRadius: 6, barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter', size: 9 }, maxRotation: 45 } },
+                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } } }
                 }
             }
         });
@@ -507,61 +417,35 @@
         const container = document.getElementById('recent-alerts');
         if (!alerts.length) {
             container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">🔔</div>
-                <div class="empty-state-title">No Recent Alerts</div>
-                <div class="empty-state-desc">All clear! No new violations detected.</div>
+            <div class="empty-state" style="padding: var(--space-8);">
+                <div class="empty-state-icon">✅</div>
+                <div class="empty-state-title">No Alerts</div>
+                <div class="empty-state-desc">Generate a Sentinel-2 report from the Map page to create real alerts.</div>
             </div>
         `;
             return;
         }
 
-        const severityIcons = {
-            'critical': '🔴',
-            'high': '🟠',
-            'medium': '🟡',
-            'low': '🟢'
-        };
-
-        const typeLabels = {
-            'encroachment': 'Encroachment',
-            'unauthorized_construction': 'Unauthorized Construction',
-            'boundary_deviation': 'Boundary Deviation',
-            'vacant_unused': 'Vacant Plot',
-            'road_encroachment': 'Road Encroachment'
-        };
+        const severityIcons = { 'high': '🔴', 'medium': '🟡', 'low': '🟢' };
 
         container.innerHTML = alerts.map(alert => `
-        <div class="alert-item ${alert.status === 'unread' ? 'unread' : ''}">
+        <div class="alert-item ${alert.status === 'new' ? 'unread' : ''}">
             <div class="alert-severity-icon ${alert.severity}">
-                ${severityIcons[alert.severity]}
+                ${severityIcons[alert.severity] || '🔵'}
             </div>
             <div class="alert-content">
-                <div class="alert-title">${typeLabels[alert.violation_type] || alert.violation_type}</div>
+                <div class="alert-title">${(alert.type || '').replace('_', ' ')}</div>
                 <div class="alert-desc">${alert.description}</div>
                 <div class="alert-meta">
-                    <span class="badge badge-${alert.severity}">${alert.severity}</span>
+                    <span class="badge badge-${alert.severity === 'high' ? 'critical' : alert.severity}">${alert.severity}</span>
                     <span>${alert.area_name}</span>
                     <span>·</span>
-                    <span>${alert.plot_number}</span>
+                    <span>${alert.source || 'Analysis'}</span>
                 </div>
             </div>
-            <div class="alert-time">${formatAlertTime(alert.created_at)}</div>
+            <div class="alert-time">${alert.date || ''}</div>
         </div>
     `).join('');
-    }
-
-    function formatAlertTime(iso) {
-        try {
-            const dt = new Date(iso);
-            const now = new Date();
-            const diffHrs = Math.round((now - dt) / (1000 * 60 * 60));
-            if (diffHrs < 1) return 'Just now';
-            if (diffHrs < 24) return `${diffHrs}h ago`;
-            return `${Math.round(diffHrs / 24)}d ago`;
-        } catch {
-            return '';
-        }
     }
 </script>
 {% endblock %}

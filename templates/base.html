@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LandWatch AI - Automated Industrial Land Monitoring & Compliance System for CSIDC">
+    <meta name="description"
+        content="LandWatch AI - Automated Industrial Land Monitoring & Compliance System for CSIDC">
     <title>{% block title %}LandWatch AI{% endblock %} | Industrial Land Monitoring</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🛰️</text></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🛰️</text></svg>">
 
     <!-- Styles -->
     <link rel="stylesheet" href="/static/css/styles.css">
@@ -24,6 +27,7 @@
 
     {% block head %}{% endblock %}
 </head>
+
 <body>
     <div class="app-shell">
         <!-- ═══ Sidebar ═══ -->
@@ -46,7 +50,8 @@
                     <span class="nav-icon"><i data-lucide="map"></i></span>
                     <span>Map View</span>
                 </a>
-                <a href="/satellite" class="nav-item {% if active_page == 'satellite' %}active{% endif %}" id="nav-satellite">
+                <a href="/satellite" class="nav-item {% if active_page == 'satellite' %}active{% endif %}"
+                    id="nav-satellite">
                     <span class="nav-icon"><i data-lucide="satellite"></i></span>
                     <span>Satellite Feed</span>
                 </a>
@@ -61,17 +66,20 @@
                     <span class="nav-icon"><i data-lucide="file-text"></i></span>
                     <span>Reports</span>
                 </a>
-                <a href="/analytics" class="nav-item {% if active_page == 'analytics' %}active{% endif %}" id="nav-analytics">
+                <a href="/analytics" class="nav-item {% if active_page == 'analytics' %}active{% endif %}"
+                    id="nav-analytics">
                     <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
                     <span>Analytics</span>
                 </a>
 
                 <div class="nav-section-label">System</div>
-                <a href="#" class="nav-item" id="nav-detection">
+                <a href="/satellite" class="nav-item {% if active_page == 'satellite' %}active{% endif %}"
+                    id="nav-detection">
                     <span class="nav-icon"><i data-lucide="scan"></i></span>
                     <span>Run Detection</span>
                 </a>
-                <a href="#" class="nav-item" id="nav-settings">
+                <a href="/settings" class="nav-item {% if active_page == 'settings' %}active{% endif %}"
+                    id="nav-settings">
                     <span class="nav-icon"><i data-lucide="settings"></i></span>
                     <span>Settings</span>
                 </a>
@@ -90,7 +98,7 @@
             <!-- Header -->
             <header class="header">
                 <div class="header-left">
-                    <button class="btn-ghost" id="sidebar-toggle" style="display:none;">
+                    <button class="btn-ghost" id="sidebar-toggle">
                         <i data-lucide="menu"></i>
                     </button>
                     <div>
@@ -188,23 +196,15 @@
             }
         });
 
-        // Run Detection trigger
-        document.getElementById('btn-scan')?.addEventListener('click', async () => {
-            showToast('AI Scan Initiated', 'Running detection on all monitored areas...', 'detection');
-            try {
-                const res = await fetch('/api/detection/run?area_id=1');
-                const data = await res.json();
-                setTimeout(() => {
-                    showToast('Scan Complete', `${data.results.plots_analyzed} plots analyzed, ${data.results.encroachments_detected} encroachments found`, 'success');
-                }, 2000);
-            } catch (e) {
-                showToast('Scan Failed', 'Unable to run detection. Try again.', 'error');
-            }
+        // Sidebar toggle for mobile
+        document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-open');
         });
 
-        document.getElementById('nav-detection')?.addEventListener('click', async (e) => {
-            e.preventDefault();
-            document.getElementById('btn-scan')?.click();
+        // Run Scan button — go to satellite page
+        document.getElementById('btn-scan')?.addEventListener('click', () => {
+            window.location.href = '/satellite';
         });
 
         // Number formatting
@@ -231,4 +231,5 @@
 
     {% block scripts %}{% endblock %}
 </body>
+
 </html>

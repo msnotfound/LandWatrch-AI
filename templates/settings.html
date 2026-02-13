@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+{% block header_title %}System Settings{% endblock %}
+{% block breadcrumb %}System / Settings{% endblock %}
+
+{% block content %}
+<!-- System Status -->
+<div class="card mb-6">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span class="title-icon"><i data-lucide="activity"></i></span>
+            System Health
+        </h2>
+    </div>
+    <div class="card-body" id="health-status">
+        <div style="display: flex; align-items: center; gap: 12px; padding: var(--space-2);">
+            <div
+                style="width: 40px; height: 40px; border: 3px solid var(--border-default); border-top-color: var(--primary-500); border-radius: 50%; animation: spin 1s linear infinite;">
+            </div>
+            <span style="color: var(--text-muted);">Checking system health...</span>
+        </div>
+        <style>
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+    </div>
+</div>
+
+<div class="grid-2 mb-6">
+    <!-- API Configuration -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <span class="title-icon"><i data-lucide="key"></i></span>
+                API Configuration
+            </h2>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: var(--space-5);">
+                <div>
+                    <label
+                        style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Copernicus
+                        CDSE — Client ID</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="password" class="select-input" id="sh-client-id" placeholder="SH_CLIENT_ID"
+                            value="••••••••" readonly style="flex: 1;">
+                        <span class="badge badge-low" id="badge-client-id">Set</span>
+                    </div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Copernicus
+                        CDSE — Client Secret</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="password" class="select-input" id="sh-client-secret" placeholder="SH_CLIENT_SECRET"
+                            value="••••••••" readonly style="flex: 1;">
+                        <span class="badge badge-low" id="badge-client-secret">Set</span>
+                    </div>
+                </div>
+                <div>
+                    <label
+                        style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">CSIDC
+                        GIS Portal URL</label>
+                    <input type="text" class="select-input" value="https://cggis.cgstate.gov.in/giscg/wmscgcog" readonly
+                        style="width: 100%;">
+                </div>
+                <div
+                    style="font-size: 0.75rem; color: var(--text-muted); padding: var(--space-3); background: var(--bg-elevated); border-radius: var(--radius-md);">
+                    <strong>Note:</strong> API keys are loaded from <code>.env</code> file. To update, edit
+                    <code>SH_CLIENT_ID</code> and <code>SH_CLIENT_SECRET</code> in your <code>.env</code> file and
+                    restart the server.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Management -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">
+                <span class="title-icon"><i data-lucide="database"></i></span>
+                Data Management
+            </h2>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; flex-direction: column; gap: var(--space-5);">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); background: var(--bg-elevated); border-radius: var(--radius-md);">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.85rem;">CSIDC GIS Data</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Cached area boundaries and plot data
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" onclick="syncData()">
+                        <i data-lucide="refresh-cw"></i> Re-sync
+                    </button>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); background: var(--bg-elevated); border-radius: var(--radius-md);">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.85rem;">Sentinel-2 Imagery</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Cached satellite images and scene
+                            data</div>
+                    </div>
+                    <button class="btn btn-sm btn-secondary"
+                        onclick="showToast('Info', 'Satellite imagery is fetched on-demand via API', 'info')">
+                        <i data-lucide="info"></i> Info
+                    </button>
+                </div>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; padding: var(--space-3); background: var(--bg-elevated); border-radius: var(--radius-md);">
+                    <div>
+                        <div style="font-weight: 600; font-size: 0.85rem;">Alerts Database</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);" id="alert-count-setting">0 alerts in
+                            memory</div>
+                    </div>
+                    <span class="badge badge-info" id="alerts-badge-setting">In-memory</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Sources -->
+<div class="card mb-6">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span class="title-icon"><i data-lucide="layers"></i></span>
+            Active Data Sources
+        </h2>
+    </div>
+    <div class="card-body no-pad">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: 500;">CSIDC GIS Portal</td>
+                    <td>WFS/WMS</td>
+                    <td style="font-size: 0.75rem; font-family: var(--font-mono);">cggis.cgstate.gov.in</td>
+                    <td><span class="badge badge-low">Active</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">Copernicus CDSE</td>
+                    <td>Sentinel Hub Process API</td>
+                    <td style="font-size: 0.75rem; font-family: var(--font-mono);">sh.dataspace.copernicus.eu</td>
+                    <td><span class="badge badge-low" id="cdse-status">Checking...</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">ArcGIS Satellite Tiles</td>
+                    <td>Tile Server</td>
+                    <td style="font-size: 0.75rem; font-family: var(--font-mono);">server.arcgisonline.com</td>
+                    <td><span class="badge badge-low">Active</span></td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 500;">OpenStreetMap</td>
+                    <td>Tile Server</td>
+                    <td style="font-size: 0.75rem; font-family: var(--font-mono);">tile.openstreetmap.org</td>
+                    <td><span class="badge badge-low">Active</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- WFS Layers Configuration -->
+<div class="card mb-6">
+    <div class="card-header">
+        <h2 class="card-title">
+            <span class="title-icon"><i data-lucide="map-pin"></i></span>
+            Configured CSIDC WFS Layers
+        </h2>
+    </div>
+    <div class="card-body" id="layers-list">
+        <div style="color: var(--text-muted); font-size: 0.8rem;">Loading WMS configuration...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Check system health
+        try {
+            const healthRes = await fetch('/api/health');
+            const health = await healthRes.json();
+
+            document.getElementById('health-status').innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-4);">
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-green);">✅</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">${health.status.toUpperCase()}</div>
+                </div>
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 800;">${health.areas}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">Areas</div>
+                </div>
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 800;">${health.plots.toLocaleString()}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">Plots</div>
+                </div>
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 800;">${health.alerts}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">Alerts</div>
+                </div>
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 800; color: ${health.dummy_data ? 'var(--accent-red)' : 'var(--accent-green)'};">${health.dummy_data ? '❌ YES' : '✅ NO'}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">Dummy Data</div>
+                </div>
+                <div style="background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); text-align: center;">
+                    <div style="font-size: 1.2rem; font-weight: 800;">v${health.version}</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">Version</div>
+                </div>
+            </div>`;
+
+            document.getElementById('alert-count-setting').textContent = `${health.alerts} alerts in memory`;
+        } catch (e) {
+            document.getElementById('health-status').innerHTML = `<div style="color: var(--accent-red);">❌ Health check failed: ${e.message}</div>`;
+        }
+
+        // Check CDSE status
+        try {
+            const testRes = await fetch('/api/satellite/search?area_id=1&max_cloud=50');
+            const testData = await testRes.json();
+            const cdse = document.getElementById('cdse-status');
+            if (testData.error) {
+                cdse.textContent = 'Error';
+                cdse.className = 'badge badge-critical';
+                document.getElementById('badge-client-id').textContent = 'Check';
+                document.getElementById('badge-client-id').className = 'badge badge-critical';
+                document.getElementById('badge-client-secret').textContent = 'Check';
+                document.getElementById('badge-client-secret').className = 'badge badge-critical';
+            } else {
+                cdse.textContent = `Active (${testData.count} scenes)`;
+                cdse.className = 'badge badge-low';
+            }
+        } catch (e) {
+            document.getElementById('cdse-status').textContent = 'Offline';
+            document.getElementById('cdse-status').className = 'badge badge-critical';
+        }
+
+        // Load WMS layers
+        try {
+            const wmsRes = await fetch('/api/gis/wms-config');
+            const wms = await wmsRes.json();
+            const layersEl = document.getElementById('layers-list');
+
+            const categories = {
+                'Area Boundaries': Object.entries(wms.layers).filter(([k]) => k.includes('boundary') || k.includes('outer') || k.includes('csidc_current') || k.includes('csidc_old') || k.includes('directorate')),
+                'Plot Data': Object.entries(wms.layers).filter(([k]) => k.includes('plot') || k.includes('info')),
+                'Land Bank': Object.entries(wms.layers).filter(([k]) => k.includes('land')),
+                'Infrastructure': Object.entries(wms.layers).filter(([k]) => k.includes('station') || k.includes('river') || k.includes('district') || k.includes('village') || k.includes('transmission') || k.includes('entit'))
+            };
+
+            layersEl.innerHTML = Object.entries(categories).map(([cat, layers]) => `
+                <div style="margin-bottom: var(--space-5);">
+                    <div style="font-weight: 700; font-size: 0.85rem; margin-bottom: var(--space-3); color: var(--text-accent);">${cat}</div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px;">
+                        ${layers.map(([key, val]) => `
+                        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg-elevated); border-radius: var(--radius-md); font-size: 0.8rem;">
+                            <span style="color: var(--accent-green);">●</span>
+                            <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted);">${key}</span>
+                            <span style="margin-left: auto; font-size: 0.65rem; color: var(--accent-cyan);">${val}</span>
+                        </div>`).join('')}
+                    </div>
+                </div>`).join('');
+        } catch (e) {
+            document.getElementById('layers-list').innerHTML = `<div style="color: var(--accent-red);">Failed to load WMS config: ${e.message}</div>`;
+        }
+    });
+
+    async function syncData() {
+        showToast('Syncing', 'Re-syncing data from CSIDC GIS portal...', 'info');
+        try {
+            const res = await fetch('/api/gis/sync', { method: 'POST' });
+            const data = await res.json();
+            showToast('Sync Complete', `Loaded ${data.areas || 0} areas`, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (e) {
+            showToast('Sync Failed', e.message, 'error');
+        }
+    }
+</script>
+{% endblock %}

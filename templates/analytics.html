@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}Analytics{% endblock %}
-{% block header_title %}Analytics & Trends{% endblock %}
-{% block breadcrumb %}Compliance / Analytics{% endblock %}
+{% block header_title %}Analytics & Insights{% endblock %}
+{% block breadcrumb %}Real Data Analytics{% endblock %}
 
 {% block content %}
-<!-- Area Selector & Date Range -->
+<!-- Area Selector -->
 <div class="card mb-6">
     <div class="card-body" style="padding: var(--space-4) var(--space-6);">
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
@@ -17,19 +17,10 @@
                     <option value="all">All Areas (Aggregate)</option>
                 </select>
             </div>
-            <div>
-                <label
-                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 4px;">Time
-                    Range</label>
-                <div class="filters-bar">
-                    <div class="filter-chip active" onclick="setRange('12m', this)">12 Months</div>
-                    <div class="filter-chip" onclick="setRange('6m', this)">6 Months</div>
-                    <div class="filter-chip" onclick="setRange('3m', this)">3 Months</div>
-                </div>
-            </div>
-            <div style="margin-left: auto;">
+            <div style="margin-left: auto; display: flex; gap: var(--space-3); align-items: center;">
+                <span style="font-size: 0.7rem; color: var(--accent-cyan);">📡 Data Source: CSIDC GIS Portal</span>
                 <button class="btn btn-primary" onclick="exportAnalytics()">
-                    <i data-lucide="download"></i> Export Report
+                    <i data-lucide="download"></i> Export CSV
                 </button>
             </div>
         </div>
@@ -37,42 +28,49 @@
 </div>
 
 <!-- KPI Cards -->
-<div class="stats-grid stagger mb-6" style="grid-template-columns: repeat(5, 1fr);">
+<div class="stats-grid stagger mb-6" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));">
     <div class="stat-card" style="--card-accent: var(--accent-green);">
         <div class="stat-card-header">
-            <div class="stat-card-icon green">📈</div>
-            <div class="stat-change positive" id="compliance-trend">↑ 3.2%</div>
+            <div class="stat-card-icon green">📊</div>
+            <div class="stat-change positive">Real</div>
         </div>
-        <div class="stat-card-value" id="kpi-compliance">--%</div>
-        <div class="stat-card-label">Current Compliance</div>
-    </div>
-    <div class="stat-card" style="--card-accent: var(--accent-red);">
-        <div class="stat-card-header">
-            <div class="stat-card-icon red">⚠️</div>
-        </div>
-        <div class="stat-card-value" id="kpi-violations">--</div>
-        <div class="stat-card-label">Total Violations (Period)</div>
+        <div class="stat-card-value" id="kpi-occupancy">--%</div>
+        <div class="stat-card-label">Avg Occupancy Rate</div>
     </div>
     <div class="stat-card" style="--card-accent: var(--accent-blue);">
         <div class="stat-card-header">
-            <div class="stat-card-icon blue">✅</div>
+            <div class="stat-card-icon blue">🏭</div>
         </div>
-        <div class="stat-card-value" id="kpi-resolved">--</div>
-        <div class="stat-card-label">Violations Resolved</div>
+        <div class="stat-card-value" id="kpi-areas">--</div>
+        <div class="stat-card-label">Industrial Areas</div>
     </div>
     <div class="stat-card" style="--card-accent: var(--accent-cyan);">
         <div class="stat-card-header">
-            <div class="stat-card-icon cyan">🛰️</div>
+            <div class="stat-card-icon cyan">📈</div>
         </div>
-        <div class="stat-card-value" id="kpi-scans">--</div>
-        <div class="stat-card-label">Scans Completed</div>
+        <div class="stat-card-value" id="kpi-allotted">--</div>
+        <div class="stat-card-label">Plots Allotted</div>
     </div>
     <div class="stat-card" style="--card-accent: var(--accent-purple);">
         <div class="stat-card-header">
-            <div class="stat-card-icon purple">⏱️</div>
+            <div class="stat-card-icon purple">🗺️</div>
         </div>
-        <div class="stat-card-value" id="kpi-avg-response">3.2d</div>
-        <div class="stat-card-label">Avg Response Time</div>
+        <div class="stat-card-value" id="kpi-available">--</div>
+        <div class="stat-card-label">Plots Available</div>
+    </div>
+    <div class="stat-card" style="--card-accent: var(--accent-amber);">
+        <div class="stat-card-header">
+            <div class="stat-card-icon amber">⚠️</div>
+        </div>
+        <div class="stat-card-value" id="kpi-unavailable">--</div>
+        <div class="stat-card-label">Plots Unavailable</div>
+    </div>
+    <div class="stat-card" style="--card-accent: var(--accent-red);">
+        <div class="stat-card-header">
+            <div class="stat-card-icon red">🔴</div>
+        </div>
+        <div class="stat-card-value" id="kpi-high-risk">--</div>
+        <div class="stat-card-label">High Risk Areas</div>
     </div>
 </div>
 
@@ -81,13 +79,13 @@
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">
-                <span class="title-icon"><i data-lucide="trending-up"></i></span>
-                Compliance Trend
+                <span class="title-icon"><i data-lucide="pie-chart"></i></span>
+                Plot Status Distribution
             </h2>
         </div>
         <div class="card-body">
             <div class="chart-container" style="height: 300px;">
-                <canvas id="trend-chart"></canvas>
+                <canvas id="status-distribution-chart"></canvas>
             </div>
         </div>
     </div>
@@ -95,12 +93,12 @@
         <div class="card-header">
             <h2 class="card-title">
                 <span class="title-icon"><i data-lucide="bar-chart-3"></i></span>
-                Violations Detected vs Resolved
+                Top 15 Areas by Plot Count
             </h2>
         </div>
         <div class="card-body">
             <div class="chart-container" style="height: 300px;">
-                <canvas id="violations-bar-chart"></canvas>
+                <canvas id="area-size-chart"></canvas>
             </div>
         </div>
     </div>
@@ -112,7 +110,7 @@
         <div class="card-header">
             <h2 class="card-title">
                 <span class="title-icon"><i data-lucide="radar"></i></span>
-                Area-wise Compliance Comparison
+                Occupancy by Top 8 Areas
             </h2>
         </div>
         <div class="card-body">
@@ -125,23 +123,23 @@
         <div class="card-header">
             <h2 class="card-title">
                 <span class="title-icon"><i data-lucide="activity"></i></span>
-                Scan Activity
+                Risk Level Distribution
             </h2>
         </div>
         <div class="card-body">
             <div class="chart-container" style="height: 300px;">
-                <canvas id="scan-chart"></canvas>
+                <canvas id="risk-distribution-chart"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Heatmap / Area-wise Breakdown -->
+<!-- Heatmap -->
 <div class="card mb-6">
     <div class="card-header">
         <h2 class="card-title">
             <span class="title-icon"><i data-lucide="grid-3x3"></i></span>
-            Area-wise Compliance Heatmap
+            Area-wise Occupancy Heatmap (Real CSIDC Data)
         </h2>
     </div>
     <div class="card-body">
@@ -154,318 +152,200 @@
 
 {% block scripts %}
 <script>
-    let historyData = [], areasData = [];
-    let trendChart, violationsBarChart, radarChart, scanChart;
-    let currentRange = '12m';
+    let areasData = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Load areas
-        const areasRes = await fetch('/api/areas');
-        areasData = await areasRes.json();
+        try {
+            const [areasRes, statsRes] = await Promise.all([
+                fetch('/api/areas'),
+                fetch('/api/dashboard/stats')
+            ]);
+            areasData = await areasRes.json();
+            const stats = await statsRes.json();
 
-        const select = document.getElementById('area-filter');
-        areasData.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a.id;
-            opt.textContent = a.name;
-            select.appendChild(opt);
-        });
+            // Populate area dropdown
+            const select = document.getElementById('area-filter');
+            areasData.forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = a.id;
+                opt.textContent = a.name;
+                select.appendChild(opt);
+            });
 
-        // Load history
-        const histRes = await fetch('/api/compliance/history');
-        historyData = await histRes.json();
+            // KPIs
+            document.getElementById('kpi-occupancy').textContent = stats.avg_occupancy + '%';
+            document.getElementById('kpi-areas').textContent = stats.total_areas;
+            document.getElementById('kpi-allotted').textContent = (stats.plot_statuses.allotted || 0).toLocaleString();
+            document.getElementById('kpi-available').textContent = (stats.plot_statuses.available || 0).toLocaleString();
+            document.getElementById('kpi-unavailable').textContent = (stats.plot_statuses.unavailable || 0).toLocaleString();
+            document.getElementById('kpi-high-risk').textContent = stats.areas_by_risk.high;
 
-        loadAnalytics();
+            loadAnalytics();
+        } catch (e) {
+            console.error('Failed to load analytics:', e);
+        }
     });
-
-    function setRange(range, chip) {
-        currentRange = range;
-        document.querySelectorAll('.filters-bar .filter-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        loadAnalytics();
-    }
 
     function loadAnalytics() {
         const areaFilter = document.getElementById('area-filter').value;
-        let data = historyData;
+        let filteredAreas = areasData;
 
         if (areaFilter !== 'all') {
-            data = data.filter(d => d.area_id === parseInt(areaFilter));
+            filteredAreas = areasData.filter(a => a.id === parseInt(areaFilter));
         }
 
-        // Filter by range
-        const rangeMonths = currentRange === '12m' ? 12 : currentRange === '6m' ? 6 : 3;
-        const months = [...new Set(data.map(d => d.month))].sort().slice(-rangeMonths);
-        data = data.filter(d => months.includes(d.month));
-
-        // KPIs
-        const latestMonth = months[months.length - 1];
-        const latestData = data.filter(d => d.month === latestMonth);
-        const avgCompliance = latestData.length > 0
-            ? (latestData.reduce((s, d) => s + d.compliance_rate, 0) / latestData.length).toFixed(1)
-            : '--';
-
-        const totalViolations = data.reduce((s, d) => s + d.violations_detected, 0);
-        const totalResolved = data.reduce((s, d) => s + d.violations_resolved, 0);
-        const totalScans = data.reduce((s, d) => s + d.scans_completed, 0);
-
-        document.getElementById('kpi-compliance').textContent = avgCompliance + '%';
-        document.getElementById('kpi-violations').textContent = totalViolations;
-        document.getElementById('kpi-resolved').textContent = totalResolved;
-        document.getElementById('kpi-scans').textContent = totalScans;
-
-        // Charts
-        createTrendChart(data, months);
-        createViolationsBarChart(data, months);
-        createRadarChart();
-        createScanChart(data, months);
-        createHeatmap();
+        createStatusChart(filteredAreas);
+        createAreaSizeChart(filteredAreas);
+        createRadarChart(filteredAreas);
+        createRiskChart(filteredAreas);
+        createHeatmap(filteredAreas);
     }
 
-    function createTrendChart(data, months) {
-        if (trendChart) trendChart.destroy();
+    let statusChart, areaSizeChart, radarChart, riskChart;
 
-        // Average compliance per month
-        const monthlyAvg = months.map(m => {
-            const d = data.filter(h => h.month === m);
-            return d.length ? (d.reduce((s, h) => s + h.compliance_rate, 0) / d.length).toFixed(1) : 0;
+    function createStatusChart(areas) {
+        if (statusChart) statusChart.destroy();
+        const ctx = document.getElementById('status-distribution-chart');
+
+        // Aggregate plot statuses
+        const statuses = {};
+        areas.forEach(a => {
+            if (a.plot_status_breakdown) {
+                Object.entries(a.plot_status_breakdown).forEach(([k, v]) => {
+                    statuses[k] = (statuses[k] || 0) + v;
+                });
+            }
         });
 
-        const ctx = document.getElementById('trend-chart');
-        trendChart = new Chart(ctx, {
-            type: 'line',
+        const colorMap = {
+            'allotted': '#10b981', 'available': '#8b5cf6',
+            'unavailable': '#ef4444', 'reserved': '#f59e0b',
+            'infrastructure': '#06b6d4', 'cancelled': '#64748b',
+            'other_land': '#a78bfa', 'other': '#475569'
+        };
+
+        const labels = Object.keys(statuses).filter(k => statuses[k] > 0).map(k => k.charAt(0).toUpperCase() + k.slice(1).replace('_', ' '));
+        const data = Object.entries(statuses).filter(([k, v]) => v > 0).map(([k, v]) => v);
+        const colors = Object.keys(statuses).filter(k => statuses[k] > 0).map(k => colorMap[k] || '#475569');
+
+        statusChart = new Chart(ctx, {
+            type: 'doughnut',
             data: {
-                labels: months.map(m => {
-                    const [y, mo] = m.split('-');
-                    return new Date(y, mo - 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
-                }),
-                datasets: [{
-                    label: 'Compliance Rate',
-                    data: monthlyAvg,
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointHoverRadius: 8,
-                    pointBackgroundColor: '#10b981',
-                    pointBorderColor: '#0f1523',
-                    pointBorderWidth: 3,
-                    borderWidth: 3
-                }]
+                labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, borderRadius: 4, spacing: 3 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false, cutout: '60%',
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#141b2d',
-                        borderColor: '#243050',
-                        borderWidth: 1,
-                        titleColor: '#f1f5f9',
-                        bodyColor: '#94a3b8',
-                        callbacks: {
-                            label: ctx => `Compliance: ${ctx.raw}%`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }
-                    },
-                    y: {
-                        min: 50, max: 100,
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: {
-                            color: '#64748b',
-                            font: { family: 'Inter', size: 10 },
-                            callback: v => v + '%'
-                        }
-                    }
+                    legend: { position: 'right', labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, padding: 12, usePointStyle: true } }
                 }
             }
         });
     }
 
-    function createViolationsBarChart(data, months) {
-        if (violationsBarChart) violationsBarChart.destroy();
+    function createAreaSizeChart(areas) {
+        if (areaSizeChart) areaSizeChart.destroy();
+        const ctx = document.getElementById('area-size-chart');
+        const top = [...areas].sort((a, b) => b.total_plots - a.total_plots).slice(0, 15);
 
-        const detected = months.map(m => data.filter(h => h.month === m).reduce((s, h) => s + h.violations_detected, 0));
-        const resolved = months.map(m => data.filter(h => h.month === m).reduce((s, h) => s + h.violations_resolved, 0));
-
-        const ctx = document.getElementById('violations-bar-chart');
-        violationsBarChart = new Chart(ctx, {
+        areaSizeChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: months.map(m => {
-                    const [y, mo] = m.split('-');
-                    return new Date(y, mo - 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
-                }),
+                labels: top.map(a => a.name.length > 12 ? a.name.slice(0, 11) + '…' : a.name),
                 datasets: [
-                    {
-                        label: 'Detected',
-                        data: detected,
-                        backgroundColor: 'rgba(239, 68, 68, 0.6)',
-                        borderColor: '#ef4444',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'Resolved',
-                        data: resolved,
-                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                        borderColor: '#10b981',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }
+                    { label: 'Allotted', data: top.map(a => a.allotted_plots || 0), backgroundColor: 'rgba(16,185,129,0.6)', borderRadius: 4 },
+                    { label: 'Available', data: top.map(a => a.available_plots || 0), backgroundColor: 'rgba(139,92,246,0.6)', borderRadius: 4 },
+                    { label: 'Other', data: top.map(a => (a.total_plots || 0) - (a.allotted_plots || 0) - (a.available_plots || 0)), backgroundColor: 'rgba(71,85,105,0.5)', borderRadius: 4 }
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, usePointStyle: true }
-                    }
-                },
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 10 }, usePointStyle: true } } },
                 scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }
-                    }
+                    x: { stacked: true, grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter', size: 9 }, maxRotation: 45 } },
+                    y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } } }
                 }
             }
         });
     }
 
-    function createRadarChart() {
+    function createRadarChart(areas) {
         if (radarChart) radarChart.destroy();
-
         const ctx = document.getElementById('radar-chart');
-        const labels = areasData.map(a => a.name.replace(' Industrial Area', ''));
-        const compliance = areasData.map(a => a.compliance_rate);
+        const topAreas = [...areas].filter(a => a.total_plots > 10).sort((a, b) => b.total_plots - a.total_plots).slice(0, 8);
 
         radarChart = new Chart(ctx, {
             type: 'radar',
             data: {
-                labels: labels,
+                labels: topAreas.map(a => a.name.length > 10 ? a.name.slice(0, 9) + '…' : a.name),
                 datasets: [{
-                    label: 'Compliance %',
-                    data: compliance,
-                    borderColor: '#0d8de0',
-                    backgroundColor: 'rgba(13, 141, 224, 0.15)',
-                    pointBackgroundColor: '#0d8de0',
-                    pointBorderColor: '#0f1523',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    borderWidth: 2
+                    label: 'Occupancy %',
+                    data: topAreas.map(a => a.occupancy_rate || 0),
+                    borderColor: '#0d8de0', backgroundColor: 'rgba(13,141,224,0.15)',
+                    pointBackgroundColor: '#0d8de0', pointBorderColor: '#0f1523', pointBorderWidth: 2, pointRadius: 4, borderWidth: 2
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    r: {
-                        beginAtZero: false,
-                        min: 50,
-                        max: 100,
-                        ticks: { color: '#64748b', font: { size: 9 }, backdropColor: 'transparent' },
-                        grid: { color: 'rgba(255,255,255,0.06)' },
-                        pointLabels: { color: '#94a3b8', font: { family: 'Inter', size: 10 } },
-                        angleLines: { color: 'rgba(255,255,255,0.06)' }
-                    }
-                }
-            }
-        });
-    }
-
-    function createScanChart(data, months) {
-        if (scanChart) scanChart.destroy();
-
-        const scans = months.map(m => data.filter(h => h.month === m).reduce((s, h) => s + h.scans_completed, 0));
-
-        const ctx = document.getElementById('scan-chart');
-        scanChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: months.map(m => {
-                    const [y, mo] = m.split('-');
-                    return new Date(y, mo - 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
-                }),
-                datasets: [{
-                    label: 'Satellite Scans',
-                    data: scans,
-                    backgroundColor: 'rgba(6, 182, 212, 0.5)',
-                    borderColor: '#06b6d4',
-                    borderWidth: 1,
-                    borderRadius: 6,
-                    barPercentage: 0.6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }
-                    },
-                    y: {
-                        grid: { color: 'rgba(255,255,255,0.04)' },
-                        ticks: { color: '#64748b', font: { family: 'Inter', size: 10 } }
-                    }
-                }
+                scales: { r: { beginAtZero: true, max: 100, ticks: { color: '#64748b', font: { size: 9 }, backdropColor: 'transparent' }, grid: { color: 'rgba(255,255,255,0.06)' }, pointLabels: { color: '#94a3b8', font: { family: 'Inter', size: 10 } }, angleLines: { color: 'rgba(255,255,255,0.06)' } } }
             }
         });
     }
 
-    function createHeatmap() {
-        const container = document.getElementById('heatmap-container');
-        container.innerHTML = areasData.map(area => {
-            const color = area.compliance_rate >= 85 ? '#10b981' :
-                area.compliance_rate >= 70 ? '#f59e0b' : '#ef4444';
-            const bgAlpha = area.compliance_rate >= 85 ? '0.12' :
-                area.compliance_rate >= 70 ? '0.12' : '0.15';
+    function createRiskChart(areas) {
+        if (riskChart) riskChart.destroy();
+        const ctx = document.getElementById('risk-distribution-chart');
+        const counts = { high: 0, medium: 0, low: 0 };
+        areas.forEach(a => { if (counts[a.risk_level] !== undefined) counts[a.risk_level]++; });
 
+        riskChart = new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                datasets: [{
+                    data: [counts.high, counts.medium, counts.low],
+                    backgroundColor: ['rgba(239,68,68,0.6)', 'rgba(245,158,11,0.6)', 'rgba(16,185,129,0.6)'],
+                    borderColor: ['#ef4444', '#f59e0b', '#10b981'], borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 }, usePointStyle: true, padding: 16 } } },
+                scales: { r: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { display: false } } }
+            }
+        });
+    }
+
+    function createHeatmap(areas) {
+        const container = document.getElementById('heatmap-container');
+        const sorted = [...areas].filter(a => a.total_plots > 0).sort((a, b) => b.occupancy_rate - a.occupancy_rate);
+
+        container.innerHTML = sorted.map(area => {
+            const occ = area.occupancy_rate || 0;
+            const color = occ >= 70 ? '#10b981' : occ >= 40 ? '#f59e0b' : '#ef4444';
+            const bgRgb = occ >= 70 ? '16,185,129' : occ >= 40 ? '245,158,11' : '239,68,68';
             return `
-            <div style="
-                background: rgba(${area.compliance_rate >= 85 ? '16,185,129' : area.compliance_rate >= 70 ? '245,158,11' : '239,68,68'}, ${bgAlpha});
-                border: 1px solid ${color}40;
-                border-radius: var(--radius-lg);
-                padding: var(--space-5);
-                text-align: center;
-                transition: all var(--transition-base);
-                cursor: pointer;
-            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px ${color}20'"
-               onmouseout="this.style.transform=''; this.style.boxShadow=''">
-                <div style="font-size: 2rem; font-weight: 800; color: ${color}; letter-spacing: -0.03em;">${area.compliance_rate}%</div>
-                <div style="font-size: 0.8rem; font-weight: 600; margin-top: 4px;">${area.name.replace(' Industrial Area', '')}</div>
-                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">${area.total_plots} plots · ${area.violations_count} violations</div>
-                <div style="margin-top: 8px;">
-                    <div class="progress-bar">
-                        <div class="progress-bar-fill ${progressColorClass(area.compliance_rate)}" style="width: ${area.compliance_rate}%;"></div>
-                    </div>
-                </div>
-            </div>
-        `;
+            <div style="background: rgba(${bgRgb}, 0.12); border: 1px solid ${color}40; border-radius: var(--radius-lg); padding: var(--space-5); text-align: center; transition: all var(--transition-base); cursor: pointer;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform=''">
+                <div style="font-size: 2rem; font-weight: 800; color: ${color}; letter-spacing: -0.03em;">${occ}%</div>
+                <div style="font-size: 0.8rem; font-weight: 600; margin-top: 4px;">${area.name}</div>
+                <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">${area.total_plots} plots · ${area.allotted_plots || 0} allotted</div>
+                <div style="margin-top: 8px;"><div class="progress-bar"><div class="progress-bar-fill ${occ >= 70 ? 'green' : occ >= 40 ? 'amber' : 'red'}" style="width: ${occ}%;"></div></div></div>
+            </div>`;
         }).join('');
     }
 
     function exportAnalytics() {
-        showToast('Generating Report', 'Preparing analytics report for download...', 'info');
-        setTimeout(() => {
-            showToast('Report Ready', 'Analytics report exported successfully.', 'success');
-        }, 1500);
+        const csv = ['Area,Total Plots,Allotted,Available,Unavailable,Occupancy %,Risk,Area Acres,Data Source'];
+        areasData.forEach(a => {
+            csv.push(`"${a.name}",${a.total_plots},${a.allotted_plots || 0},${a.available_plots || 0},${a.unavailable_plots || 0},${a.occupancy_rate},${a.risk_level},${a.area_acres},"${a.data_source || 'CSIDC GIS'}"`);
+        });
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `landwatch_analytics_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        showToast('Export Complete', 'Analytics data exported as CSV', 'success');
     }
 </script>
 {% endblock %}

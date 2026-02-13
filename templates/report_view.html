@@ -1,231 +1,246 @@
 {% extends "base.html" %}
 
 {% block title %}Compliance Report{% endblock %}
-{% block header_title %}Compliance Report : {{ report_id }}{% endblock %}
-{% block breadcrumb %}Reports{% endblock %}
+{% block header_title %}Compliance Report{% endblock %}
+{% block breadcrumb %}Reports / {{ report_id }}{% endblock %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-6);">
+<div id="report-loading" style="text-align: center; padding: var(--space-16);">
+    <div style="font-size: 2rem; margin-bottom: var(--space-4);">🛰️</div>
+    <div style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-2);">Loading Report Data</div>
+    <div style="color: var(--text-muted); font-size: 0.85rem;">Retrieving analysis results...</div>
+</div>
 
-    <!-- Report Header Card -->
-    <div class="card" id="report-header">
-        <div class="card-body" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h2 style="font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-bottom: 4px;">Surveillance Report
-                </h2>
-                <div style="font-size: 0.9rem; color: #94a3b8;">ID: <span
-                        style="font-family: monospace; color: #cbd5e1;">{{ report_id }}</span></div>
-            </div>
-            <div style="text-align: right;">
-                <div class="badge badge-info" style="font-size: 0.8rem; margin-bottom: 6px;">AI Generated</div>
-                <div style="font-size: 0.75rem; color: #64748b;" id="report-date">Generated: --</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Grid -->
-    <div class="grid-2">
-        <!-- Area Details -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <span class="title-icon"><i data-lucide="map"></i></span>
-                    Monitored Area
-                </h3>
-            </div>
-            <div class="card-body">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-                    <div>
-                        <div class="stat-label">Industrial Area</div>
-                        <div class="stat-val" id="area-name" style="font-size: 1.1rem;">--</div>
-                        <div style="font-size: 0.7rem; color: #06b6d4; margin-top: 4px;">Source: <span
-                                id="area-source">--</span></div>
-                    </div>
-                    <div>
-                        <div class="stat-label">Total Area</div>
-                        <div class="stat-val" id="area-size">--</div>
-                    </div>
+<div id="report-content" style="display: none; max-width: 900px; margin: 0 auto;">
+    <!-- Report Header -->
+    <div class="card" style="border-left: 4px solid var(--accent-cyan);">
+        <div class="card-body">
+            <div
+                style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4);">
+                <div>
+                    <div
+                        style="font-size: 0.7rem; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: var(--space-2);">
+                        LandWatch AI — Compliance Report</div>
+                    <h2 id="rpt-area-name" style="font-size: 1.5rem; font-weight: 800; margin-bottom: 4px;">—</h2>
+                    <p id="rpt-area-source" style="font-size: 0.8rem; color: var(--text-muted);">—</p>
                 </div>
-            </div>
-        </div>
-
-        <!-- Satellite Metadata -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <span class="title-icon"><i data-lucide="satellite"></i></span>
-                    Imagery Source
-                </h3>
-            </div>
-            <div class="card-body">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-                    <div>
-                        <div class="stat-label">Satellite</div>
-                        <div class="stat-val" id="sat-source" style="font-size: 1rem;">Sentinel-2 L2A</div>
-                    </div>
-                    <div>
-                        <div class="stat-label">Acquisition Date</div>
-                        <div class="stat-val" id="sat-date" style="font-size: 1.1rem; color: #f59e0b;">--</div>
-                    </div>
-                    <div>
-                        <div class="stat-label">Cloud Cover</div>
-                        <div class="stat-val" id="cloud-cover">--</div>
-                    </div>
-                    <div>
-                        <div class="stat-label">Resolution</div>
-                        <div class="stat-val">10 m/px</div>
-                    </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 2px;">Report ID</div>
+                    <div id="rpt-id" style="font-weight: 600; font-size: 0.85rem;">{{ report_id }}</div>
+                    <div id="rpt-date" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">—</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Satellite Image View -->
-    <div class="card">
+    <!-- Satellite Imagery -->
+    <div class="card" style="margin-top: var(--space-4);">
         <div class="card-header">
-            <h3 class="card-title">
-                <span class="title-icon"><i data-lucide="eye"></i></span>
-                Optical Analysis View (Sentinel-2 Actual Imagery)
+            <h3 class="card-title" style="font-size: 0.9rem;">
+                <span class="title-icon"><i data-lucide="satellite"></i></span>
+                Sentinel-2 Satellite Imagery
             </h3>
-        </div>
-        <div class="card-body" style="padding: 0;">
-            <div id="sat-image-container"
-                style="width: 100%; height: 400px; background: #0f172a; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: 0 0 12px 12px;">
-                <span style="color: #64748b;">Loading Sentinel-2 Imagery...</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analysis Results -->
-    <div class="card">
-        <div class="card-header">
-            <h3 class="card-title">
-                <span class="title-icon"><i data-lucide="activity"></i></span>
-                AI Analysis Findings
-            </h3>
-            <div id="findings-status" class="badge">Processing...</div>
         </div>
         <div class="card-body">
-            <div id="findings-list" style="display: flex; flex-direction: column; gap: var(--space-4);">
-                <!-- Findings injected here -->
+            <div id="rpt-image-container">
+                <div id="rpt-image-loading"
+                    style="text-align: center; padding: var(--space-8); color: var(--text-muted);">
+                    Loading satellite imagery...
+                </div>
             </div>
-
-            <div class="mt-6 pt-4 border-t border-white/10">
-                <h4 style="font-size: 0.9rem; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Recommendation</h4>
-                <div id="recommendation-text" style="font-size: 1rem; color: #f1f5f9; font-weight: 500;">
-                    --
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
+                <div
+                    style="padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Scene Date
+                    </div>
+                    <div id="rpt-scene-date" style="font-weight: 700; font-size: 0.9rem; margin-top: 2px;">—</div>
+                </div>
+                <div
+                    style="padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Cloud Cover
+                    </div>
+                    <div id="rpt-cloud" style="font-weight: 700; font-size: 0.9rem; margin-top: 2px;">—</div>
+                </div>
+                <div
+                    style="padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Platform</div>
+                    <div id="rpt-platform" style="font-weight: 700; font-size: 0.9rem; margin-top: 2px;">—</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div style="display: flex; justify-content: flex-end; gap: var(--space-4);">
-        <button class="btn btn-secondary" onclick="window.print()">
-            <i data-lucide="printer"></i> Print Report
-        </button>
-        <button class="btn btn-primary" onclick="window.location.href='/map'">
-            <i data-lucide="map"></i> View on Map
-        </button>
+    <!-- Analysis Summary -->
+    <div class="card" style="margin-top: var(--space-4);">
+        <div class="card-header">
+            <h3 class="card-title" style="font-size: 0.9rem;">
+                <span class="title-icon"><i data-lucide="bar-chart-2"></i></span>
+                Area Summary (CSIDC GIS Data)
+            </h3>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-4);">
+                <div
+                    style="text-align: center; padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div id="rpt-total-plots" style="font-size: 1.5rem; font-weight: 800;">—</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Total Plots</div>
+                </div>
+                <div
+                    style="text-align: center; padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div id="rpt-allotted" style="font-size: 1.5rem; font-weight: 800; color: #10b981;">—</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Allotted</div>
+                </div>
+                <div
+                    style="text-align: center; padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div id="rpt-available" style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6;">—</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Available</div>
+                </div>
+                <div
+                    style="text-align: center; padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div id="rpt-occupancy" style="font-size: 1.5rem; font-weight: 800; color: #06b6d4;">—</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Occupancy</div>
+                </div>
+                <div
+                    style="text-align: center; padding: var(--space-3); background: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                    <div id="rpt-area-size" style="font-size: 1.5rem; font-weight: 800;">—</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">Acres</div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Findings -->
+    <div class="card" style="margin-top: var(--space-4);">
+        <div class="card-header">
+            <h3 class="card-title" style="font-size: 0.9rem;">
+                <span class="title-icon"><i data-lucide="search"></i></span>
+                Findings
+            </h3>
+            <span id="rpt-findings-count" class="badge badge-info">0</span>
+        </div>
+        <div class="card-body" id="rpt-findings">
+            <div style="text-align: center; color: var(--text-muted); padding: var(--space-4);">
+                No findings.
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendation -->
+    <div class="card" style="margin-top: var(--space-4); border-left: 4px solid var(--accent-green);">
+        <div class="card-header">
+            <h3 class="card-title" style="font-size: 0.9rem;">
+                <span class="title-icon"><i data-lucide="check-circle"></i></span>
+                Recommendation
+            </h3>
+        </div>
+        <div class="card-body">
+            <p id="rpt-recommendation" style="font-size: 0.9rem; font-weight: 500;">—</p>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: var(--space-4); margin-top: var(--space-6); justify-content: flex-end;">
+        <button class="btn btn-secondary" onclick="window.print()">
+            <i data-lucide="printer"></i> Print
+        </button>
+        <a href="/map" class="btn btn-primary">
+            <i data-lucide="map"></i> Back to Map
+        </a>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Extract area ID from report ID (RPT-DATE-AREAID)
-        const reportId = "{{ report_id }}"; // e.g. RPT-20260213-5
-        const parts = reportId.split('-');
-        const areaId = parts[2] || 1;
+    document.addEventListener('DOMContentLoaded', () => {
+        // The report data was generated server-side. We stored it in sessionStorage.
+        // Alternatively, we display the ID and let the user know they can re-generate.
+        // For now, fetch it from the last generated report via stored data.
 
-        // Fetch report data
-        try {
-            const res = await fetch(`/api/report/generate?area_id=${areaId}`);
-            if (!res.ok) throw new Error('Report generation failed');
+        const reportId = '{{ report_id }}';
 
-            const data = await res.json();
-            renderReport(data);
-        } catch (e) {
-            console.error(e);
-            document.getElementById('findings-list').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">⚠️</div>
-                    <div class="empty-state-title">Error Loading Report</div>
-                    <div class="empty-state-desc">Could not fetch report data for ID: ${reportId}</div>
-                </div>
-            `;
-            document.getElementById('sat-image-container').innerHTML = '<span style="color: #ef4444;">Failed to load data</span>';
+        // Check if we have report data in sessionStorage
+        const cachedReport = sessionStorage.getItem(`report_${reportId}`);
+        if (cachedReport) {
+            renderReport(JSON.parse(cachedReport));
+            return;
+        }
+
+        // Otherwise try to re-generate
+        const areaIdMatch = reportId.match(/RPT-\d+-(\d+)/);
+        if (areaIdMatch) {
+            fetch(`/api/report/generate?area_id=${areaIdMatch[1]}`)
+                .then(r => r.json())
+                .then(data => {
+                    sessionStorage.setItem(`report_${data.report_id}`, JSON.stringify(data));
+                    renderReport(data);
+                })
+                .catch(e => {
+                    document.getElementById('report-loading').innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: var(--space-4);">⚠️</div>
+                    <div style="font-size: 1rem; font-weight: 600;">Failed to Load Report</div>
+                    <div style="color: var(--text-muted);">${e.message}</div>
+                `;
+                });
         }
     });
 
-    function renderReport(data) {
-        document.getElementById('report-date').textContent = new Date(data.generated_at).toLocaleString();
+    function renderReport(report) {
+        document.getElementById('report-loading').style.display = 'none';
+        document.getElementById('report-content').style.display = 'block';
 
-        document.getElementById('area-name').textContent = data.area_name;
-        document.getElementById('area-source').textContent = data.area_source;
-        document.getElementById('area-size').textContent = data.analysis_summary.total_area_monitored_acres + ' acres';
+        document.getElementById('rpt-area-name').textContent = report.area_name;
+        document.getElementById('rpt-area-source').textContent = `Source: ${report.area_source || 'CSIDC GIS'}`;
+        document.getElementById('rpt-date').textContent = new Date(report.generated_at).toLocaleDateString('en-IN', {
+            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
 
-        document.getElementById('sat-date').textContent = data.sentinel_scene_date;
-        document.getElementById('sat-source').textContent = data.sentinel_platform || 'Sentinel-2 L2A';
-        document.getElementById('cloud-cover').textContent = data.analysis_summary.cloud_cover_percent + '%';
+        // Satellite
+        document.getElementById('rpt-scene-date').textContent = report.sentinel_scene_date || 'No data';
+        document.getElementById('rpt-cloud').textContent = report.analysis_summary.cloud_cover_percent != null
+            ? report.analysis_summary.cloud_cover_percent + '%' : '—';
+        document.getElementById('rpt-platform').textContent = report.sentinel_platform || '—';
 
-        // Render Satellite Image
-        const imgContainer = document.getElementById('sat-image-container');
-        if (data.sentinel_image_url) {
-            imgContainer.innerHTML = `<img src="${data.sentinel_image_url}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`;
+        // Image
+        const imgContainer = document.getElementById('rpt-image-container');
+        if (report.sentinel_image_url) {
+            imgContainer.innerHTML = `<img src="${report.sentinel_image_url}" alt="Sentinel-2 Image" style="width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">`;
         } else {
-            imgContainer.innerHTML = `<div style="color: #64748b; text-align: center;">Imagery Unavailable<br><span style="font-size: 0.8em">Cloud Cover: ${data.analysis_summary.cloud_cover_percent}% or No Access</span></div>`;
+            imgContainer.innerHTML = `<div style="padding: var(--space-6); text-align: center; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); color: var(--text-muted); font-size: 0.85rem;">
+            ${report.sentinel_error ? '⚠️ ' + report.sentinel_error : 'No satellite imagery available. Check Sentinel Hub credentials.'}
+        </div>`;
         }
 
-        document.getElementById('recommendation-text').textContent = data.recommendation;
+        // Summary
+        const s = report.analysis_summary;
+        document.getElementById('rpt-total-plots').textContent = s.total_plots;
+        document.getElementById('rpt-allotted').textContent = s.allotted_plots;
+        document.getElementById('rpt-available').textContent = s.available_plots;
+        document.getElementById('rpt-occupancy').textContent = s.occupancy_rate + '%';
+        document.getElementById('rpt-area-size').textContent = s.total_area_acres;
 
-        const statusBadge = document.getElementById('findings-status');
-        if (data.analysis_summary.change_detected) {
-            statusBadge.className = 'badge badge-critical';
-            statusBadge.textContent = `${data.analysis_summary.findings_count} Issues Detected`;
-            document.getElementById('recommendation-text').style.color = '#ef4444';
+        // Findings
+        const findingsContainer = document.getElementById('rpt-findings');
+        document.getElementById('rpt-findings-count').textContent = report.findings.length;
+
+        if (report.findings.length === 0) {
+            findingsContainer.innerHTML = '<div style="text-align: center; padding: var(--space-6); color: var(--accent-green);">✅ No issues found — area data is consistent.</div>';
         } else {
-            statusBadge.className = 'badge badge-low';
-            statusBadge.textContent = 'Compliant';
-            document.getElementById('recommendation-text').style.color = '#10b981';
-        }
-
-        const findingsContainer = document.getElementById('findings-list');
-        if (!data.findings || data.findings.length === 0) {
-            findingsContainer.innerHTML = `
-                <div class="empty-state" style="padding: 20px;">
-                    <div class="empty-state-icon" style="font-size: 2rem;">✅</div>
-                    <div class="empty-state-title" style="font-size: 1rem;">No Deviations Detected</div>
-                    <div class="empty-state-desc">The monitored area matches the reference CSIDC GIS boundaries.</div>
+            const severityColors = { 'high': '#ef4444', 'medium': '#f59e0b', 'low': '#10b981' };
+            findingsContainer.innerHTML = report.findings.map(f => `
+            <div style="padding: var(--space-3) var(--space-4); border-left: 3px solid ${severityColors[f.severity] || '#64748b'}; margin-bottom: var(--space-3); background: rgba(255,255,255,0.02); border-radius: 0 var(--radius-md) var(--radius-md) 0;">
+                <div style="display: flex; align-items: center; gap: var(--space-2); margin-bottom: 4px;">
+                    <span class="badge badge-${f.severity === 'high' ? 'critical' : f.severity}" style="font-size: 0.6rem;">${f.severity.toUpperCase()}</span>
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">${f.source || ''}</span>
                 </div>
-            `;
-        } else {
-            findingsContainer.innerHTML = data.findings.map(f => `
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span class="badge badge-${f.severity}">${f.type.replace('_', ' ').toUpperCase()}</span>
-                        <span style="font-size: 0.8rem; color: #94a3b8;">${Math.round(f.confidence * 100)}% Confidence</span>
-                    </div>
-                    <div style="font-weight: 500; font-size: 1rem; color: #f1f5f9; margin-bottom: 4px;">${f.description}</div>
-                    <div style="font-size: 0.8rem; color: #64748b;">
-                        📍 Location: ${f.location.lat.toFixed(5)}, ${f.location.lng.toFixed(5)}
-                    </div>
-                </div>
-            `).join('');
+                <p style="font-size: 0.85rem; line-height: 1.5;">${f.description}</p>
+            </div>
+        `).join('');
         }
+
+        // Recommendation
+        document.getElementById('rpt-recommendation').textContent = report.recommendation;
     }
 </script>
-<style>
-    .stat-label {
-        font-size: 0.75rem;
-        color: #94a3b8;
-        margin-bottom: 4px;
-    }
-
-    .stat-val {
-        font-weight: 700;
-        color: #f1f5f9;
-    }
-</style>
 {% endblock %}

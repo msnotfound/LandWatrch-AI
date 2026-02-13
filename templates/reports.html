@@ -2,7 +2,7 @@
 
 {% block title %}Reports{% endblock %}
 {% block header_title %}Compliance Reports{% endblock %}
-{% block breadcrumb %}Reports & Documentation{% endblock %}
+{% block breadcrumb %}Reports & Analysis{% endblock %}
 
 {% block content %}
 <!-- Report Generator -->
@@ -10,7 +10,7 @@
     <div class="card-header">
         <h2 class="card-title">
             <span class="title-icon"><i data-lucide="file-plus-2"></i></span>
-            Generate New Report
+            Generate Sentinel-2 Compliance Report
         </h2>
     </div>
     <div class="card-body">
@@ -18,52 +18,36 @@
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6);">
             <div>
                 <label
-                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Report
-                    Type</label>
-                <select class="select-input w-full" id="report-type">
-                    <option value="compliance">Compliance Summary</option>
-                    <option value="violation">Violation Report</option>
-                    <option value="encroachment">Encroachment Analysis</option>
-                    <option value="area">Area Assessment</option>
-                    <option value="trend">Trend Report</option>
-                </select>
-            </div>
-            <div>
-                <label
                     style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Industrial
                     Area</label>
                 <select class="select-input w-full" id="report-area">
-                    <option value="all">All Areas</option>
                 </select>
             </div>
             <div>
                 <label
-                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Date
-                    Range</label>
+                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Analysis
+                    Period</label>
                 <select class="select-input w-full" id="report-range">
-                    <option value="7d">Last 7 Days</option>
-                    <option value="30d" selected>Last 30 Days</option>
-                    <option value="90d">Last 90 Days</option>
-                    <option value="1y">Last Year</option>
+                    <option value="30">Last 30 Days</option>
+                    <option value="60">Last 60 Days</option>
+                    <option value="90" selected>Last 90 Days</option>
+                    <option value="180">Last 6 Months</option>
                 </select>
             </div>
-            <div>
-                <label
-                    style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 6px;">Format</label>
-                <select class="select-input w-full" id="report-format">
-                    <option value="pdf">PDF Report</option>
-                    <option value="csv">CSV Data</option>
-                    <option value="json">JSON Export</option>
-                </select>
+            <div style="display: flex; align-items: flex-end;">
+                <button class="btn btn-primary btn-lg" id="btn-gen" onclick="generateReport()" style="width: 100%;">
+                    <i data-lucide="satellite"></i> Generate Report
+                </button>
             </div>
         </div>
-        <button class="btn btn-primary btn-lg" onclick="generateReport()">
-            <i data-lucide="file-check"></i> Generate Report
-        </button>
+        <div style="font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+            <span style="color: var(--accent-cyan);">ℹ️</span>
+            Reports use real Sentinel-2 satellite imagery from Copernicus CDSE and CSIDC GIS boundary data. No simulated
+            data.
+        </div>
     </div>
 </div>
 
-<!-- Report Preview / Recent Reports -->
 <div class="grid-2-1 mb-6">
     <!-- Report Preview -->
     <div class="card">
@@ -85,74 +69,73 @@
             <div class="empty-state">
                 <div class="empty-state-icon">📄</div>
                 <div class="empty-state-title">No Report Generated</div>
-                <div class="empty-state-desc">Configure options above and click "Generate Report" to create a compliance
-                    report.</div>
+                <div class="empty-state-desc">Select an area and click "Generate Report" to create a compliance report
+                    using real Sentinel-2 imagery + CSIDC data.</div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Reports -->
+    <!-- Generated Reports History -->
     <div class="card">
         <div class="card-header">
             <h2 class="card-title">
                 <span class="title-icon"><i data-lucide="history"></i></span>
-                Recent Reports
+                Generated Reports
             </h2>
         </div>
-        <div class="card-body no-pad" id="recent-reports" style="max-height: 500px; overflow-y: auto;">
+        <div class="card-body no-pad" id="reports-history" style="max-height: 500px; overflow-y: auto;">
+            <div class="empty-state" style="padding: var(--space-6);">
+                <div class="empty-state-icon">📭</div>
+                <div class="empty-state-title">No Reports Yet</div>
+                <div class="empty-state-desc">Generate your first report above.</div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Violation Summary Table -->
+<!-- Area Data Table -->
 <div class="card mb-6">
     <div class="card-header">
         <h2 class="card-title">
             <span class="title-icon"><i data-lucide="table-2"></i></span>
-            Violation Summary
+            All Areas — Real CSIDC Data
         </h2>
-        <button class="btn btn-sm btn-secondary" onclick="exportViolationsCSV()">
+        <button class="btn btn-sm btn-secondary" onclick="exportAreaCSV()">
             <i data-lucide="download"></i> Export CSV
         </button>
     </div>
     <div class="card-body no-pad">
-        <table class="data-table" id="violations-summary-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Plot</th>
-                    <th>Area</th>
-                    <th>Industry</th>
-                    <th>Type</th>
-                    <th>Severity</th>
-                    <th>Confidence</th>
-                    <th>Deviation</th>
-                    <th>Status</th>
-                    <th>Detected</th>
-                </tr>
-            </thead>
-            <tbody id="violations-tbody"></tbody>
-        </table>
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="areas-table">
+                <thead>
+                    <tr>
+                        <th>Area Name</th>
+                        <th>Total Plots</th>
+                        <th>Allotted</th>
+                        <th>Available</th>
+                        <th>Unavailable</th>
+                        <th>Occupancy</th>
+                        <th>Area (acres)</th>
+                        <th>Risk</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody id="areas-tbody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    let violationsData = [], areasData = [];
-
-    const typeLabels = {
-        'encroachment': 'Encroachment',
-        'unauthorized_construction': 'Unauthorized Construction',
-        'boundary_deviation': 'Boundary Deviation',
-        'vacant_unused': 'Vacant/Unused',
-        'road_encroachment': 'Road Encroachment'
-    };
+    let areasData = [];
+    const generatedReports = [];
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Load areas
         const areasRes = await fetch('/api/areas');
         areasData = await areasRes.json();
+
         const select = document.getElementById('report-area');
         areasData.forEach(a => {
             const opt = document.createElement('option');
@@ -161,206 +144,197 @@
             select.appendChild(opt);
         });
 
-        // Load violations
-        const vRes = await fetch('/api/violations?limit=50');
-        violationsData = await vRes.json();
-        renderViolationsTable(violationsData);
-        renderRecentReports();
+        renderAreasTable();
     });
 
-    function renderViolationsTable(violations) {
-        const tbody = document.getElementById('violations-tbody');
-        tbody.innerHTML = violations.map(v => `
-        <tr>
-            <td style="font-family: var(--font-mono); font-size: 0.75rem;">V-${String(v.id).padStart(4, '0')}</td>
-            <td style="font-weight: 500;">${v.plot_number}</td>
-            <td>${v.area_name.replace(' Industrial Area', '')}</td>
-            <td class="truncate" style="max-width: 150px;">${v.industry_name}</td>
-            <td>${typeLabels[v.violation_type] || v.violation_type}</td>
-            <td><span class="badge badge-${v.severity}">${v.severity}</span></td>
-            <td>
-                <span style="font-family: var(--font-mono);">${(v.confidence * 100).toFixed(0)}%</span>
-            </td>
-            <td style="color: var(--accent-amber);">${v.deviation_percent}%</td>
-            <td><span class="badge badge-${v.status === 'confirmed' ? 'critical' : v.status === 'investigating' ? 'medium' : v.status === 'resolved' ? 'low' : 'info'}">${v.status}</span></td>
-            <td style="font-size: 0.75rem; color: var(--text-muted);">${v.detected_date}</td>
-        </tr>
-    `).join('');
+    function renderAreasTable() {
+        const tbody = document.getElementById('areas-tbody');
+        const sorted = [...areasData].sort((a, b) => b.total_plots - a.total_plots);
+
+        tbody.innerHTML = sorted.map(a => {
+            const riskColor = a.risk_level === 'high' ? 'critical' : a.risk_level === 'medium' ? 'medium' : 'low';
+            return `
+            <tr>
+                <td style="font-weight: 500;">${a.name}</td>
+                <td style="font-family: var(--font-mono);">${a.total_plots}</td>
+                <td style="color: var(--accent-green);">${a.allotted_plots || 0}</td>
+                <td style="color: var(--accent-purple);">${a.available_plots || 0}</td>
+                <td style="color: var(--accent-red);">${a.unavailable_plots || 0}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <div class="progress-bar" style="width: 50px;">
+                            <div class="progress-bar-fill ${a.occupancy_rate >= 70 ? 'green' : a.occupancy_rate >= 40 ? 'amber' : 'red'}" style="width: ${a.occupancy_rate}%;"></div>
+                        </div>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem;">${a.occupancy_rate}%</span>
+                    </div>
+                </td>
+                <td style="font-family: var(--font-mono);">${a.area_acres}</td>
+                <td><span class="badge badge-${riskColor}">${a.risk_level}</span></td>
+                <td style="font-size: 0.7rem; color: var(--text-muted);">${a.data_source || 'CSIDC GIS'}</td>
+            </tr>`;
+        }).join('');
     }
 
-    function renderRecentReports() {
-        const container = document.getElementById('recent-reports');
-        const reports = [
-            { name: 'Monthly Compliance - Jan 2026', type: 'Compliance Summary', date: '2026-02-01', format: 'PDF', size: '2.4 MB' },
-            { name: 'Encroachment Analysis Q4', type: 'Encroachment Analysis', date: '2026-01-15', format: 'PDF', size: '5.1 MB' },
-            { name: 'Urla Area Assessment', type: 'Area Assessment', date: '2026-01-10', format: 'PDF', size: '3.8 MB' },
-            { name: 'Violations Export - Dec 2025', type: 'Violation Report', date: '2025-12-31', format: 'CSV', size: '1.2 MB' },
-            { name: 'Annual Compliance Trend', type: 'Trend Report', date: '2025-12-28', format: 'PDF', size: '7.3 MB' },
-            { name: 'Gondwara Critical Alert', type: 'Violation Report', date: '2025-12-20', format: 'PDF', size: '1.9 MB' },
-        ];
+    async function generateReport() {
+        const areaId = document.getElementById('report-area').value;
+        const daysBack = document.getElementById('report-range').value;
+        const area = areasData.find(a => a.id === parseInt(areaId));
+        if (!area) return;
 
-        container.innerHTML = reports.map(r => `
-        <div class="alert-item" style="cursor: pointer;" onclick="showToast('Opening Report', '${r.name}', 'info')">
-            <div class="alert-severity-icon" style="background: var(--accent-blue-soft); color: var(--accent-blue);">
-                ${r.format === 'PDF' ? '📄' : r.format === 'CSV' ? '📊' : '📁'}
-            </div>
-            <div class="alert-content">
-                <div class="alert-title">${r.name}</div>
-                <div class="alert-desc">${r.type} · ${r.size}</div>
-            </div>
-            <div class="alert-time">${r.date}</div>
-        </div>
-    `).join('');
-    }
+        const btn = document.getElementById('btn-gen');
+        btn.disabled = true;
+        btn.innerHTML = '<div style="width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; display: inline-block;"></div> Analyzing...';
 
-    function generateReport() {
-        const type = document.getElementById('report-type');
-        const area = document.getElementById('report-area');
-        const range = document.getElementById('report-range');
-        const format = document.getElementById('report-format');
-
-        const typeLabel = type.options[type.selectedIndex].text;
-        const areaLabel = area.options[area.selectedIndex].text;
-        const rangeLabel = range.options[range.selectedIndex].text;
-
-        showToast('Generating Report', `Creating ${typeLabel} for ${areaLabel}...`, 'info');
-
-        // Show loading
         const preview = document.getElementById('report-preview');
         preview.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; padding: var(--space-8); gap: var(--space-4);">
             <div style="width: 48px; height: 48px; border: 3px solid var(--border-default); border-top-color: var(--primary-500); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <span style="font-size: 0.9rem; color: var(--text-muted);">Generating report...</span>
+            <span style="font-size: 0.9rem; color: var(--text-muted);">Searching Sentinel-2 scenes & analyzing CSIDC data...</span>
         </div>
-        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-    `;
+        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>`;
 
-        setTimeout(() => {
-            const relevantArea = area.value !== 'all' ? areasData.find(a => a.id === parseInt(area.value)) : null;
-            const areaViolations = area.value !== 'all'
-                ? violationsData.filter(v => v.area_name === relevantArea?.name)
-                : violationsData;
+        showToast('Generating Report', `Fetching Sentinel-2 imagery for ${area.name}...`, 'detection');
 
+        try {
+            const res = await fetch(`/api/report/generate?area_id=${areaId}&days_back=${daysBack}`);
+            const report = await res.json();
+
+            if (report.error) throw new Error(report.error);
+
+            // Store report
+            generatedReports.unshift(report);
+            updateReportsHistory();
+
+            // Render preview
             const now = new Date();
-            const reportId = `RPT-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-
             preview.innerHTML = `
             <div style="background: white; color: #1a1a2e; border-radius: var(--radius-lg); padding: var(--space-8); max-height: 600px; overflow-y: auto;">
-                <!-- Report Header -->
+                <!-- Header -->
                 <div style="text-align: center; border-bottom: 3px solid #0d8de0; padding-bottom: var(--space-6); margin-bottom: var(--space-6);">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
                         <span style="font-size: 2rem;">🛰️</span>
                         <div>
                             <h1 style="font-size: 1.5rem; font-weight: 800; color: #0d8de0; margin: 0;">LANDWATCH AI</h1>
-                            <p style="font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">Automated Industrial Land Monitoring System</p>
+                            <p style="font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">Real Sentinel-2 Analysis Report</p>
                         </div>
                     </div>
-                    <h2 style="font-size: 1.2rem; font-weight: 700; color: #1a1a2e; margin: 12px 0 4px;">${typeLabel}</h2>
-                    <p style="font-size: 0.8rem; color: #666;">${areaLabel} · ${rangeLabel} · Generated ${now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                    <p style="font-size: 0.7rem; color: #999; font-family: monospace;">Report ID: ${reportId}</p>
+                    <h2 style="font-size: 1.2rem; font-weight: 700; color: #1a1a2e; margin: 12px 0 4px;">${report.area_name}</h2>
+                    <p style="font-size: 0.8rem; color: #666;">Generated ${now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    <p style="font-size: 0.7rem; color: #999; font-family: monospace;">Report ID: ${report.report_id}</p>
                 </div>
 
-                <!-- CSIDC Header -->
+                <!-- Data Source -->
                 <div style="background: #f0f4ff; border-radius: 8px; padding: 16px; margin-bottom: 24px; border-left: 4px solid #0d8de0;">
-                    <p style="font-weight: 600; color: #0d8de0; margin: 0 0 4px;">Chhattisgarh State Industrial Development Corporation (CSIDC)</p>
-                    <p style="font-size: 0.8rem; color: #555; margin: 0;">Industrial Land Compliance Monitoring Report</p>
+                    <p style="font-weight: 600; color: #0d8de0; margin: 0 0 4px;">Data Sources</p>
+                    <p style="font-size: 0.8rem; color: #555; margin: 0;">
+                        CSIDC GIS Portal (cggis.cgstate.gov.in) · 
+                        Copernicus CDSE (Sentinel-2 L2A)
+                        ${report.sentinel_scene_date ? `· Scene: ${report.sentinel_scene_date}` : ''}
+                        ${report.sentinel_platform ? ` · ${report.sentinel_platform}` : ''}
+                    </p>
+                    ${report.sentinel_error ? `<p style="font-size: 0.75rem; color: #d97706; margin: 4px 0 0;">⚠️ ${report.sentinel_error}</p>` : ''}
                 </div>
 
-                <!-- Executive Summary -->
-                <h3 style="font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📊 Executive Summary</h3>
+                ${report.sentinel_image_url ? `
+                <div style="margin-bottom: 24px; text-align: center;">
+                    <img src="${report.sentinel_image_url}" style="max-width: 100%; border-radius: 8px; border: 1px solid #eee;" alt="Sentinel-2 imagery"/>
+                    <div style="font-size: 0.7rem; color: #999; margin-top: 4px;">Real Sentinel-2 True Color · ${report.sentinel_scene_date || ''}</div>
+                </div>` : ''}
+
+                <!-- Summary -->
+                <h3 style="font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📊 Analysis Summary</h3>
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
                     <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">${relevantArea ? relevantArea.compliance_rate : '80.3'}%</div>
-                        <div style="font-size: 0.7rem; color: #666;">Compliance Rate</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">${report.analysis_summary.occupancy_rate}%</div>
+                        <div style="font-size: 0.7rem; color: #666;">Occupancy Rate</div>
                     </div>
                     <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800; color: #ef4444;">${areaViolations.length}</div>
-                        <div style="font-size: 0.7rem; color: #666;">Total Violations</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: #0d8de0;">${report.analysis_summary.allotted_plots}</div>
+                        <div style="font-size: 0.7rem; color: #666;">Allotted Plots</div>
                     </div>
                     <div style="background: #f8f9fa; border-radius: 8px; padding: 16px; text-align: center;">
-                        <div style="font-size: 1.8rem; font-weight: 800; color: #0d8de0;">${relevantArea ? relevantArea.total_plots : '648'}</div>
-                        <div style="font-size: 0.7rem; color: #666;">Plots Monitored</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: #8b5cf6;">${report.analysis_summary.available_plots}</div>
+                        <div style="font-size: 0.7rem; color: #666;">Available Plots</div>
                     </div>
                 </div>
 
-                <!-- Violations Breakdown -->
-                <h3 style="font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">⚠️ Violation Breakdown</h3>
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 24px;">
-                    <thead>
-                        <tr style="background: #f0f4ff;">
-                            <th style="padding: 8px 12px; text-align: left; color: #0d8de0;">Type</th>
-                            <th style="padding: 8px 12px; text-align: center; color: #0d8de0;">Count</th>
-                            <th style="padding: 8px 12px; text-align: center; color: #0d8de0;">Avg Confidence</th>
-                            <th style="padding: 8px 12px; text-align: center; color: #0d8de0;">Critical</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${Object.keys(typeLabels).map(type => {
-                const typeV = areaViolations.filter(v => v.violation_type === type);
-                const avgConf = typeV.length ? (typeV.reduce((s, v) => s + v.confidence, 0) / typeV.length * 100).toFixed(0) : 0;
-                const critical = typeV.filter(v => v.severity === 'critical').length;
-                return `<tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 8px 12px;">${typeLabels[type]}</td>
-                                <td style="padding: 8px 12px; text-align: center; font-weight: 600;">${typeV.length}</td>
-                                <td style="padding: 8px 12px; text-align: center;">${avgConf}%</td>
-                                <td style="padding: 8px 12px; text-align: center; color: ${critical > 0 ? '#ef4444' : '#10b981'}; font-weight: 600;">${critical}</td>
-                            </tr>`;
-            }).join('')}
-                    </tbody>
-                </table>
+                <!-- Findings -->
+                ${report.findings.length > 0 ? `
+                <h3 style="font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">⚠️ Findings (${report.findings.length})</h3>
+                ${report.findings.map(f => `
+                <div style="background: ${f.severity === 'high' ? '#fef2f2' : f.severity === 'medium' ? '#fffbeb' : '#eff6ff'}; border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; border-left: 3px solid ${f.severity === 'high' ? '#ef4444' : f.severity === 'medium' ? '#f59e0b' : '#3b82f6'};">
+                    <div style="font-weight: 600; font-size: 0.85rem; color: ${f.severity === 'high' ? '#ef4444' : f.severity === 'medium' ? '#d97706' : '#2563eb'};">${f.type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</div>
+                    <div style="font-size: 0.8rem; color: #555; margin-top: 4px;">${f.description}</div>
+                    <div style="font-size: 0.7rem; color: #999; margin-top: 4px;">Source: ${f.source} · Confidence: ${(f.confidence * 100).toFixed(0)}%</div>
+                </div>`).join('')}` : '<p style="font-size: 0.85rem; color: #10b981; font-weight: 600;">✅ No issues found — area data is consistent.</p>'}
 
-                <!-- Recommendations -->
-                <h3 style="font-size: 1rem; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📋 Recommendations</h3>
-                <ol style="padding-left: 20px; font-size: 0.85rem; color: #444; line-height: 2;">
-                    <li>Prioritize field inspection for <strong>${areaViolations.filter(v => v.severity === 'critical').length} critical</strong> violations immediately</li>
-                    <li>Issue notices for plots with encroachment deviation > 15%</li>
-                    <li>Update reference boundary maps for recently resurveyed plots</li>
-                    <li>Schedule follow-up scans within 10 days for high-risk areas</li>
-                    <li>Review vacant plots for potential re-allotment consideration</li>
-                </ol>
+                <!-- Recommendation -->
+                <div style="background: #f0fdf4; border-radius: 8px; padding: 16px; margin-top: 20px; border-left: 4px solid #10b981;">
+                    <p style="font-weight: 600; color: #059669; margin: 0 0 4px;">Recommendation</p>
+                    <p style="font-size: 0.85rem; color: #555; margin: 0;">${report.recommendation}</p>
+                </div>
 
                 <!-- Footer -->
                 <div style="margin-top: 32px; padding-top: 16px; border-top: 2px solid #eee; text-align: center;">
-                    <p style="font-size: 0.7rem; color: #999;">This report was auto-generated by LandWatch AI using Sentinel-2 satellite imagery analysis.</p>
-                    <p style="font-size: 0.7rem; color: #999;">CSIDC Confidential · ${now.toLocaleDateString('en-IN')} · Model v2.3.1</p>
+                    <p style="font-size: 0.7rem; color: #999;">Auto-generated by LandWatch AI using real Sentinel-2 + CSIDC GIS data.</p>
+                    <p style="font-size: 0.7rem; color: #999;">CSIDC Confidential · ${now.toLocaleDateString('en-IN')}</p>
                 </div>
-            </div>
-        `;
+            </div>`;
 
-            showToast('Report Generated', `${typeLabel} ready for review and download`, 'success');
-        }, 2000);
+            showToast('Report Ready', `${report.area_name} report generated with ${report.findings.length} finding(s)`, 'success');
+        } catch (e) {
+            console.error(e);
+            preview.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">❌</div>
+                <div class="empty-state-title">Report Generation Failed</div>
+                <div class="empty-state-desc">${e.message || 'Check Sentinel Hub credentials and try again.'}</div>
+            </div>`;
+            showToast('Error', e.message || 'Failed to generate report', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="satellite"></i> Generate Report';
+            lucide.createIcons();
+        }
+    }
+
+    function updateReportsHistory() {
+        const container = document.getElementById('reports-history');
+        container.innerHTML = generatedReports.map(r => `
+        <div class="alert-item" style="cursor: pointer;" onclick="showToast('Report ${r.report_id}', '${r.area_name} – ${r.findings.length} findings', 'info')">
+            <div class="alert-severity-icon" style="background: var(--accent-blue-soft); color: var(--accent-blue);">📄</div>
+            <div class="alert-content">
+                <div class="alert-title">${r.area_name}</div>
+                <div class="alert-desc">${r.findings.length} findings · ${r.sentinel_scene_date || 'No satellite data'}</div>
+            </div>
+            <div class="alert-time" style="font-size: 0.7rem;">${r.report_id}</div>
+        </div>`).join('');
     }
 
     function printReport() {
         const preview = document.getElementById('report-preview');
-        if (preview.querySelector('.empty-state')) {
-            showToast('No Report', 'Generate a report first', 'warning');
-            return;
-        }
+        if (preview.querySelector('.empty-state')) { showToast('No Report', 'Generate a report first', 'warning'); return; }
         window.print();
     }
 
     function downloadReport() {
         const preview = document.getElementById('report-preview');
-        if (preview.querySelector('.empty-state')) {
-            showToast('No Report', 'Generate a report first', 'warning');
-            return;
-        }
+        if (preview.querySelector('.empty-state')) { showToast('No Report', 'Generate a report first', 'warning'); return; }
         showToast('Downloading', 'Report download started...', 'success');
     }
 
-    function exportViolationsCSV() {
-        const csv = ['ID,Plot,Area,Industry,Type,Severity,Confidence,Deviation,Status,Date'];
-        violationsData.forEach(v => {
-            csv.push(`V-${String(v.id).padStart(4, '0')},${v.plot_number},"${v.area_name}","${v.industry_name}",${v.violation_type},${v.severity},${v.confidence},${v.deviation_percent},${v.status},${v.detected_date}`);
+    function exportAreaCSV() {
+        const csv = ['Area,Total Plots,Allotted,Available,Unavailable,Occupancy %,Area Acres,Risk,Source'];
+        areasData.forEach(a => {
+            csv.push(`"${a.name}",${a.total_plots},${a.allotted_plots || 0},${a.available_plots || 0},${a.unavailable_plots || 0},${a.occupancy_rate},${a.area_acres},${a.risk_level},"${a.data_source || 'CSIDC GIS'}"`);
         });
         const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `landwatch_violations_${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `landwatch_areas_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
-        showToast('Export Complete', 'Violations data exported as CSV', 'success');
+        showToast('Export Complete', 'Area data exported as CSV', 'success');
     }
 </script>
 {% endblock %}
