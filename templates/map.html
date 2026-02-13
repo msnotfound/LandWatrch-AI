@@ -26,8 +26,20 @@
                 <button class="btn btn-sm btn-secondary" onclick="toggleSatelliteView()" id="btn-sat-toggle">
                     <i data-lucide="satellite"></i> Satellite
                 </button>
+                <button class="btn btn-sm btn-secondary" onclick="toggleCSIDCLayer()" id="btn-csidc-toggle"
+                    title="Toggle real CSIDC GIS layer overlay">
+                    <i data-lucide="layers"></i> CSIDC GIS
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="loadGeoJSONBoundaries()" id="btn-boundaries"
+                    title="Load real GeoJSON boundaries">
+                    <i data-lucide="map-pin"></i> Boundaries
+                </button>
                 <button class="btn btn-sm btn-detect" onclick="runFullDetection()">
                     <i data-lucide="scan"></i> Run Detection
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="generateReport()" id="btn-report"
+                    title="Generate compliance report comparing Sentinel-2 vs CSIDC boundaries">
+                    <i data-lucide="file-text"></i> Gen Report
                 </button>
             </div>
         </div>
@@ -86,13 +98,15 @@
 <script>
     let fullMap, selectedAreaId = null, plotMarkers = [], isSatView = false;
     let areasData = [], plotsData = [];
+    let csidcWmsLayer = null, csidcLayerVisible = false;
+    let boundaryLayer = null, areaBoundaryLayer = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
-        // Initialize map
+        // Initialize map centered on Chhattisgarh
         fullMap = L.map('full-map', {
             zoomControl: true,
             attributionControl: false
-        }).setView([21.5, 81.8], 8);
+        }).setView([21.5, 81.8], 7);
 
         const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             maxZoom: 19
@@ -106,11 +120,25 @@
 
         window.mapLayers = { dark: darkTiles, sat: satTiles, current: 'dark' };
 
-        // Load areas
+        // Load real CSIDC areas
         const areasRes = await fetch('/api/areas');
         areasData = await areasRes.json();
 
         renderMapAreas(areasData);
+
+        // Show data source indicator
+        const badge = document.createElement('div');
+        badge.className = 'leaflet-control';
+        badge.innerHTML = `<div style="
+            background: rgba(15,23,42,0.85); backdrop-filter: blur(8px);
+            border: 1px solid rgba(6,182,212,0.3); border-radius: 8px;
+            padding: 6px 12px; font-size: 11px; color: #94a3b8;
+            display: flex; align-items: center; gap: 6px;
+        ">
+            <span style="width:6px;height:6px;background:#10b981;border-radius:50%;display:inline-block;"></span>
+            <span>${areasData.length} areas from <strong style="color:#06b6d4;">CSIDC GIS Portal</strong></span>
+        </div>`;
+        fullMap.getContainer().querySelector('.leaflet-bottom.leaflet-left')?.appendChild(badge);
 
         // Check URL params for pre-selected area
         const params = new URLSearchParams(window.location.search);
@@ -130,7 +158,7 @@
                 color: color,
                 fillColor: color,
                 fillOpacity: 0.12,
-                radius: area.area_acres * 4,
+                radius: Math.max(1000, Math.sqrt(area.total_plots) * 500),
                 weight: 2,
                 dashArray: '5, 8'
             }).addTo(fullMap);
@@ -169,11 +197,18 @@
             const marker = L.marker(area.center, { icon }).addTo(fullMap);
             marker.on('click', () => selectArea(area.id));
 
+            // Add tooltip with area name
+            marker.bindTooltip(area.name, {
+                direction: 'top',
+                offset: [0, -20],
+                className: 'area-tooltip'
+            });
+
             area._circle = circle;
             area._marker = marker;
         });
 
-        // Inject pulse animation
+        // Inject pulse animation & tooltip styles
         if (!document.getElementById('map-pulse-style')) {
             const style = document.createElement('style');
             style.id = 'map-pulse-style';
@@ -182,6 +217,18 @@
                 0% { transform: scale(0.8); opacity: 0.4; }
                 100% { transform: scale(2.5); opacity: 0; }
             }
+            .area-tooltip {
+                background: rgba(15,23,42,0.9) !important;
+                border: 1px solid rgba(6,182,212,0.3) !important;
+                color: #e2e8f0 !important;
+                font-family: 'Inter', sans-serif !important;
+                font-size: 11px !important;
+                font-weight: 600 !important;
+                padding: 4px 10px !important;
+                border-radius: 6px !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+            }
+            .area-tooltip::before { border-top-color: rgba(15,23,42,0.9) !important; }
         `;
             document.head.appendChild(style);
         }
@@ -193,16 +240,29 @@
         if (!area) return;
 
         // Zoom to area
-        fullMap.setView(area.center, 12, { animate: true });
+        fullMap.setView(area.center, 14, { animate: true });
 
-        // Show area info
+        // Load real GeoJSON boundary for this area
+        loadAreaBoundary(areaId);
+
+        // Show area info with data source
         const color = area.risk_level === 'high' ? '#ef4444' :
             area.risk_level === 'medium' ? '#f59e0b' : '#10b981';
 
+        const dataSourceBadge = area.data_source ?
+            `<div style="margin-bottom: var(--space-3); display: flex; align-items: center; gap: 6px;">
+                <span style="width:5px;height:5px;background:#10b981;border-radius:50%;display:inline-block;"></span>
+                <span style="font-size: 0.65rem; color: #06b6d4;">Data: ${area.data_source}</span>
+            </div>` : '';
+
         document.getElementById('area-info-content').innerHTML = `
+        ${dataSourceBadge}
         <div style="margin-bottom: var(--space-4);">
             <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">${area.name}</h3>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">${area.location}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">${area.location || area.district || 'Chhattisgarh'}</p>
+            <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 4px;">
+                📍 ${area.center[0].toFixed(4)}°N, ${area.center[1].toFixed(4)}°E
+            </p>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
             <div>
@@ -244,6 +304,45 @@
         renderPlotMarkers(plotsData);
     }
 
+    async function loadAreaBoundary(areaId) {
+        // Remove existing area boundary
+        if (areaBoundaryLayer) {
+            fullMap.removeLayer(areaBoundaryLayer);
+            areaBoundaryLayer = null;
+        }
+
+        try {
+            const res = await fetch(`/api/gis/boundary/${areaId}`);
+            const geojson = await res.json();
+
+            if (geojson.geometry && geojson.geometry.coordinates) {
+                areaBoundaryLayer = L.geoJSON(geojson, {
+                    style: {
+                        color: '#06b6d4',
+                        fillColor: '#06b6d4',
+                        fillOpacity: 0.08,
+                        weight: 2.5,
+                        dashArray: '8, 4'
+                    },
+                    onEachFeature: (feature, layer) => {
+                        layer.bindPopup(`
+                            <div style="font-family:'Inter',sans-serif;">
+                                <strong style="color:#06b6d4;">${feature.properties.name}</strong>
+                                <br><small style="color:#94a3b8;">${feature.properties.district || feature.properties.location}</small>
+                                <br><small style="color:#64748b;">Real CSIDC GIS boundary</small>
+                            </div>
+                        `);
+                    }
+                }).addTo(fullMap);
+
+                // Fit to boundary
+                fullMap.fitBounds(areaBoundaryLayer.getBounds(), { padding: [20, 20] });
+            }
+        } catch (e) {
+            console.log('Could not load boundary:', e);
+        }
+    }
+
     function renderPlots(plots) {
         const container = document.getElementById('plots-list');
         if (!plots.length) {
@@ -269,10 +368,10 @@
         <div class="area-item" style="padding: var(--space-3) var(--space-4);">
             <div class="area-color" style="background: ${statusColors[plot.status] || 'var(--text-muted)'}; height: 28px;"></div>
             <div class="area-info" style="min-width: 0;">
-                <div class="area-name" style="font-size: 0.8rem;">${plot.plot_number}</div>
-                <div class="area-location truncate" style="font-size: 0.7rem;">${plot.industry_name}</div>
+                <div class="area-name" style="font-size: 0.8rem;">${plot.plot_number}${plot.uid ? ' <span style=\"font-size:0.6rem;color:#06b6d4;\">' + plot.uid + '</span>' : ''}</div>
+                <div class="area-location truncate" style="font-size: 0.7rem;">${plot.industry_name}${plot.data_source === 'CSIDC GIS' ? ' <span style=\"font-size:0.55rem;color:#10b981;\">●</span>' : ''}</div>
             </div>
-            <span class="badge ${statusBadge[plot.status] || 'badge-info'}">${plot.status.replace('_', ' ')}</span>
+            <span class="badge ${statusBadge[plot.status] || 'badge-info'}">${(plot.status || '').replace('_', ' ')}</span>
         </div>
     `).join('');
     }
@@ -283,7 +382,7 @@
         plotMarkers = [];
 
         plots.forEach(plot => {
-            if (!plot.boundary || plot.boundary.length < 4) return;
+            if (!plot.boundary || plot.boundary.length < 3) return;
 
             const color = plot.status === 'compliant' ? '#10b981' :
                 plot.status === 'violation' ? '#ef4444' :
@@ -298,6 +397,9 @@
                 weight: 1.5
             }).addTo(fullMap);
 
+            const csidcInfo = plot.data_source === 'CSIDC GIS' ?
+                `<div style="font-size:10px;color:#06b6d4;margin-top:4px;">📡 Real CSIDC Data${plot.uid ? ' | UID: ' + plot.uid : ''}</div>` : '';
+
             poly.bindPopup(`
             <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
                 <div style="font-weight: 700; font-size: 13px; color: #f1f5f9;">${plot.plot_number}</div>
@@ -305,7 +407,9 @@
                 <div style="font-size: 11px;">
                     <div>Area: ${plot.reference_area_sqm} sqm</div>
                     <div>Current: ${plot.current_area_sqm} sqm</div>
-                    <div style="color: ${color}; font-weight: 600; margin-top: 4px; text-transform: uppercase;">${plot.status.replace('_', ' ')}</div>
+                    ${plot.csidc_status ? '<div>CSIDC Status: <strong>' + plot.csidc_status + '</strong></div>' : ''}
+                    <div style="color: ${color}; font-weight: 600; margin-top: 4px; text-transform: uppercase;">${(plot.status || '').replace('_', ' ')}</div>
+                    ${csidcInfo}
                 </div>
             </div>
         `);
@@ -354,6 +458,89 @@
         lucide.createIcons();
     }
 
+    function toggleCSIDCLayer() {
+        const btn = document.getElementById('btn-csidc-toggle');
+        if (!csidcWmsLayer) {
+            // Create WMS layer from CSIDC GIS portal
+            csidcWmsLayer = L.tileLayer.wms('https://cggis.cgstate.gov.in/giscg/wmscgcog', {
+                layers: 'csidc_industrial_area_outer_boundary',
+                format: 'image/png',
+                transparent: true,
+                version: '1.3.0',
+                opacity: 0.7,
+                attribution: 'CSIDC GIS Portal'
+            });
+        }
+
+        if (csidcLayerVisible) {
+            fullMap.removeLayer(csidcWmsLayer);
+            csidcLayerVisible = false;
+            btn.classList.remove('active');
+            btn.innerHTML = '<i data-lucide="layers"></i> CSIDC GIS';
+            showToast('CSIDC Layer', 'WMS overlay removed', 'info');
+        } else {
+            csidcWmsLayer.addTo(fullMap);
+            csidcLayerVisible = true;
+            btn.classList.add('active');
+            btn.innerHTML = '<i data-lucide="layers"></i> CSIDC GIS ✓';
+            showToast('CSIDC GIS Layer', 'Real industrial area boundaries from cggis.cgstate.gov.in', 'success');
+        }
+        lucide.createIcons();
+    }
+
+    async function loadGeoJSONBoundaries() {
+        if (boundaryLayer) {
+            fullMap.removeLayer(boundaryLayer);
+            boundaryLayer = null;
+            document.getElementById('btn-boundaries').classList.remove('active');
+            showToast('Boundaries', 'GeoJSON boundaries removed', 'info');
+            return;
+        }
+
+        try {
+            showToast('Loading Boundaries', 'Fetching real CSIDC area boundaries...', 'info');
+            const res = await fetch('/api/gis/boundaries');
+            const geojson = await res.json();
+
+            boundaryLayer = L.geoJSON(geojson, {
+                style: feature => {
+                    const risk = feature.properties.risk_level;
+                    const color = risk === 'high' ? '#ef4444' : risk === 'medium' ? '#f59e0b' : '#10b981';
+                    return {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.1,
+                        weight: 2,
+                        dashArray: '6, 3'
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    const p = feature.properties;
+                    layer.bindPopup(`
+                        <div style="font-family:'Inter',sans-serif;min-width:200px;">
+                            <div style="font-weight:700;font-size:14px;color:#f1f5f9;margin-bottom:6px;">${p.name}</div>
+                            <div style="font-size:11px;color:#94a3b8;">
+                                ${p.district ? '<div>District: ' + p.district + '</div>' : ''}
+                                ${p.location ? '<div>Location: ' + p.location + '</div>' : ''}
+                                <div>Plots: ${p.total_plots}</div>
+                                <div>Compliance: <strong style="color:${p.compliance_rate > 80 ? '#10b981' : '#f59e0b'}">${p.compliance_rate}%</strong></div>
+                            </div>
+                            <div style="font-size:10px;color:#06b6d4;margin-top:6px;">📡 Source: CSIDC GIS Portal</div>
+                        </div>
+                    `);
+                    layer.on('click', () => {
+                        selectArea(p.id);
+                    });
+                }
+            }).addTo(fullMap);
+
+            document.getElementById('btn-boundaries').classList.add('active');
+            showToast('Boundaries Loaded', `${geojson.totalFeatures} real CSIDC area boundaries displayed`, 'success');
+        } catch (e) {
+            showToast('Error', 'Failed to load boundaries: ' + e.message, 'error');
+        }
+    }
+
     async function runFullDetection() {
         showToast('AI Detection Started', 'Processing satellite imagery for all monitored areas...', 'detection');
         for (const area of areasData) {
@@ -365,6 +552,39 @@
         setTimeout(() => {
             showToast('Detection Complete', `Analysis complete for ${areasData.length} areas. Check alerts for new violations.`, 'success');
         }, 1500);
+    }
+    async function generateReport() {
+        if (!selectedAreaId) {
+            showToast('Select Area', 'Please select an industrial area on the map first.', 'warning');
+            return;
+        }
+
+        const btn = document.getElementById('btn-report');
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Generating...';
+
+        try {
+            showToast('Generating Report', 'Fetching latest Sentinel-2 imagery and comparing with CSIDC boundaries...', 'info');
+
+            // Call API to generate report
+            const res = await fetch(`/api/report/generate?area_id=${selectedAreaId}`);
+            const data = await res.json();
+
+            if (data.report_id) {
+                showToast('Report Ready', 'Redirecting to compliance report...', 'success');
+                setTimeout(() => {
+                    window.location.href = `/reports/view/${data.report_id}`;
+                }, 1000);
+            } else {
+                throw new Error('No report ID returned');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error', 'Failed to generate report. Checks logs.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="file-text"></i> Gen Report';
+            lucide.createIcons();
+        }
     }
 </script>
 {% endblock %}

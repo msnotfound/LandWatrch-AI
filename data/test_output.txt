@@ -1,0 +1,37 @@
+﻿python : INFO:app:==================================================
+==========
+At line:1 char:1
++ python test_data.py 2>&1 | Out-File 
+c:\LandWatchAi\data\test_output.t ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO:app:======...==== 
+   ===========:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO:app:LandWatch AI v2.0 ù Powered by Real CSIDC GIS Data
+INFO:app:===========================================================
+=
+INFO:app:Loading real CSIDC industrial area data...
+INFO:csidc_gis_client:Loaded 36 areas from cache
+INFO:app:Loaded 36 industrial areas from CSIDC GIS
+INFO:app:Loaded 50 plots from CSIDC GIS
+INFO:app:\u2713 Loaded 36 real industrial areas
+INFO:app:\u2713 Loaded 2127 plots (50 from CSIDC)
+INFO:app:\u2713 Generated 726 violations for monitoring
+Industrial Areas: 36
+Total Plots: 2127
+Violations: 726
+Alerts: 30
+Real CSIDC Plots: 50
+
+First 5 areas:
+    1. KHAPRI KHURD                        | Center: [21.572290885, 81.847854275] | Source: CSIDC GIS Portal
+    2. NARAYANBAHALI                       | Center: [22.654523425, 83.78742292999999] | Source: CSIDC GIS Portal
+    3. AURETHI, BHATAPARA                  | Center: [21.74469766, 81.959358195] | Source: CSIDC GIS Portal
+    4. INDUSTRIAL AREA SIYARPALI-MAHUAPALI | Center: [21.87098795, 83.495201545] | Source: CSIDC GIS Portal
+    5. RIKHI                               | Center: [22.979454065, 82.911064665] | Source: CSIDC GIS Portal
+
+First 3 CSIDC plots:
+  Plot 5          | READYMADE GARMENTS PARK   | Status: ALLOTTED     | UID: IA-1407
+  Plot 2          | Food Park Sukma           | Status: ALLOTTED     | UID: IA-2030
+  Plot 17 E       | TEKNAR                    | Status: UNAVAILABLE  | UID: IA-615

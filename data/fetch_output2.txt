@@ -1,0 +1,73 @@
+﻿============================================================
+Fetching CSIDC Industrial Area Outer Boundaries...
+============================================================
+Total industrial areas: 36
+
+  KHAPRI KHURD              | KHAPRI KHURD    |                 | [21.572290885, 81.847854275]
+  NARAYANBAHALI             | NARAYANBAHALI   |                 | [22.654523425, 83.78742292999999]
+  AURETHI, BHATAPARA        | AURETHI         |                 | [21.74469766, 81.959358195]
+  INDUSTRIAL AREA SIYARPALI | INDUSTRIAL AREA |                 | [21.87098795, 83.495201545]
+  RIKHI                     | RIKHI           |                 | [22.979454065, 82.911064665]
+  METAL PARK PHASE II SECTO | Kanhera         |                 | [21.33355427, 81.61859407]
+  FOOD PARK SECTOR 1        | Bagaud          |                 | [20.86973756, 81.668101655]
+  PANGRIKHURD               | PANGRIKHURD     |                 | [20.91447813, 80.853169025]
+  BARBASPUR                 | BARBASPUR       |                 | [23.066321485, 82.59376209999999]
+  GANGAPUR KHURD AMBIKAPUR  |                 |                 | [23.10578921, 83.175394125]
+  TEXTILE PARK              | Kurru Nava Raip |                 | [21.101097359999997, 81.80771516499999]
+  METAL PARK PHASE II SECTO | Achholi         |                 | [21.33087593, 81.61783174]
+  TILDA                     | Bartori         |                 | [21.49574167, 81.81019810000001]
+  Industrial Area Abhanpur  | Abhanpur        |                 | [21.05891381, 81.738259325]
+  TEKNAR                    | Tekanar         |                 | [18.911097310000002, 81.35659313]
+  LAKHANPURI                | LAKHANPURI      |                 | [20.39342096, 81.43825871]
+  HATHKERA-BIDBIDA          | HATHKERA-BIDBID |                 | [21.927411705, 81.930662505]
+  KESDA                     | KESDA           |                 | [21.60354676, 81.793737375]
+  ENGINEERING PARK          |                 |                 | [21.22204358, 81.41103620999999]
+  SILPAHARI INDUSTRIAL AREA | SILPAHARI INDUS |                 | [22.019387535, 82.190881905]
+  PARASGARHI INDUSTRIAL ARE | PARASGARHI INDU |                 | [23.198749295, 82.226640395]
+  FOOD PARK SECTOR 2        | Bagaud          |                 | [20.877686869999998, 81.65460897]
+  MAHROOMKHURD              | MAHROOMKHURD    |                 | [21.225425505, 81.04768747]
+  RAIL PARK                 | RAIL PARK       |                 | [21.235024844999998, 81.39986402]
+  KHAMARIA INDUSTRIAL AREA  | KHAMARIA        |                 | [22.07793139, 81.840018135]
+  READYMADE GARMENTS PARK N | Sector-5 Nava R |                 | [21.211664255000002, 81.7942631]
+  PHARMACEUTICAL PARK NAVA  | Sector-22 Nava  |                 | [21.1702905, 81.75346849]
+  Industrial Area G-Jamgoan | G-Jamgoan       |                 | [20.968562724999998, 81.693872825]
+  FARSABAHAR                | FARSABAHAR      |                 | [22.518014665, 83.85535960499999]
+  PLASTIC PARK              | Sarora          |                 | [21.291055005, 81.593254895]
+  Industrial Area Selar     | Selar           |                 | [22.17691807, 82.248968335]
+  Industrial Area Shyamtara | Shyamtarai      |                 | [20.689788805, 81.52866384000001]
+  Food Park Sukma           | Sukma           |                 | [18.395897025, 81.70687696499999]
+  ULAKIYA                   | ULAKIYA         |                 | [22.675948769999998, 83.50954168]
+  Industrial Area Cum Food  | Chandanu Raveli |                 | [21.805078145, 81.69031928]
+  PARASIYA                  | PARASIYA        |                 | [22.004567440000002, 81.94582117499999]
+
+Saved 36 areas to data/csidc_areas.json
+
+============================================================
+Fetching CSIDC Industrial Plots...
+============================================================
+  Layer 'csidc_industrial_area_with_plots': 50 features
+  Properties: ['gid', 'objectid', 'district', 'plot_type', 'total_area', 'reservatio', 'plot_munci', 'corner_plo', 'premium_ba', 'addi_premi', 'total_prem', 'label', 'tot_premiu', 'location', 'remark', 'sector_inf', 'industrial', 'district_i', 'plotno_inf', 'uniqueplot', 'plotactiva', 'plotupdate', 'plot_yesno', 'category_i', 'quest', 'status_inf', 'applied_ti', 'alloted_ti', 'allotmentr', 'industri_1', 'industri_2', 'gis_tid', 'st_area_sh', 'st_length_', 'uidv1', 'status_from_csidc', 'uid']
+    {'gid': 1, 'objectid': 0, 'district': 'RAIPUR', 'plot_type': 'INDUSTRIAL PURPOSE', 'total_area': 1400, 'reservatio': None, 'plot_munci': None, 'corner_plo': 'YES', 'premium_ba': 25000000, 'addi_premi': 2500000, 'total_prem': 27500000, 'label': None, 'tot_premiu': 0.0, 'location': 'Sector-5 Nava Raipur Atal Nagar', 'remark': None, 'sector_inf': None, 'industrial': 'READYMADE GARMENTS PARK', 'district_i': 'RAIPUR', 'plotno_inf': '5', 'uniqueplot': '5', 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'YES', 'category_i': 'INDUSTRIAL PLOT-ALLOTED', 'quest': None, 'status_inf': 'ALLOTTED', 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': 'READYMADE GARMENTS PARK', 'industri_2': 'READYMADE GARMENTS PARK', 'gis_tid': None, 'st_area_sh': 0.0, 'st_length_': 0.0, 'uidv1': 'IA-1407', 'status_from_csidc': 'ALLOTTED', 'uid': 'IA-1407'}
+    {'gid': 2, 'objectid': 2, 'district': 'SUKMA', 'plot_type': 'Industrial Purpose', 'total_area': 1000, 'reservatio': 'NO', 'plot_munci': 'YES', 'corner_plo': 'YES', 'premium_ba': 4000000, 'addi_premi': 1200000, 'total_prem': 5200000, 'label': None, 'tot_premiu': 0.0, 'location': 'SUKMA', 'remark': None, 'sector_inf': None, 'industrial': 'Food Park Sukma', 'district_i': 'Sukma', 'plotno_inf': '2', 'uniqueplot': '2', 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'Yes', 'category_i': 'INDUSTRIAL PLOT-ALLOTED', 'quest': None, 'status_inf': 'ALLOTTED', 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': 'Food Park Sukma', 'industri_2': 'Food Park Sukma', 'gis_tid': None, 'st_area_sh': 0.0, 'st_length_': 0.0, 'uidv1': None, 'status_from_csidc': 'ALLOTTED', 'uid': 'IA-2030'}
+    {'gid': 3, 'objectid': 1807, 'district': 'Dantewada', 'plot_type': 'INDUSTRIAL PURPOSE', 'total_area': 0.0, 'reservatio': None, 'plot_munci': None, 'corner_plo': None, 'premium_ba': 0.0, 'addi_premi': 0.0, 'total_prem': 0.0, 'label': None, 'tot_premiu': 0.0, 'location': 'Tekanar', 'remark': None, 'sector_inf': 'Other', 'industrial': 'TEKNAR', 'district_i': 'Dantewada', 'plotno_inf': '17 E', 'uniqueplot': None, 'plotactiva': '2018-01-31Z', 'plotupdate': None, 'plot_yesno': 'YES', 'category_i': 'INDUSTRIAL PLOT-ALLOTED', 'quest': None, 'status_inf': 'UNAVAILABLE', 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': None, 'industri_2': None, 'gis_tid': None, 'st_area_sh': 6.843853e-09, 'st_length_': 0.000350757269856, 'uidv1': 'IA-615', 'status_from_csidc': None, 'uid': 'IA-615'}
+  Saved to data/csidc_plots_csidc_industrial_area_with_plots.json
+  Layer 'csidc_industrial_plots': Error - Expecting value: line 1 column 1 (char 0)
+  Layer 'cg_industrial_area_with_plot_info': 50 features
+  Properties: ['PLOT_NO', 'TYPE', 'INDUSTRIAL', 'LABEL', 'REMARK', 'LABEL_2']
+    {'PLOT_NO': '1', 'TYPE': 'PLOT', 'INDUSTRIAL': 'TENDUA PHASE 1', 'LABEL': 'INDUSTRIAL PLOT - ALLOTED', 'REMARK': '', 'LABEL_2': '1'}
+    {'PLOT_NO': '2', 'TYPE': 'PLOT', 'INDUSTRIAL': 'TENDUA PHASE 1', 'LABEL': 'INDUSTRIAL PLOT - ALLOTED', 'REMARK': '', 'LABEL_2': '2'}
+    {'PLOT_NO': '3', 'TYPE': 'PLOT', 'INDUSTRIAL': 'TENDUA PHASE 1', 'LABEL': 'INDUSTRIAL PLOT - ALLOTED', 'REMARK': '', 'LABEL_2': '3'}
+  Saved to data/csidc_plots_cg_industrial_area_with_plot_info.json
+
+============================================================
+Fetching CSIDC Industrial Area Entities...
+============================================================
+Total entities: 50
+Entity properties: ['objectid', 'district', 'plot_type', 'total_area', 'reservatio', 'plot_munci', 'corner_plo', 'premium_ba', 'addi_premi', 'total_prem', 'label', 'tot_premiu', 'location', 'remark', 'sector_inf', 'industrial', 'district_i', 'plotno_inf', 'uniqueplot', 'plotactiva', 'plotupdate', 'plot_yesno', 'category_i', 'quest', 'status_inf', 'applied_ti', 'alloted_ti', 'allotmentr', 'industri_1', 'industri_2', 'gis_tid', 'shape_leng', 'shape_area']
+  {'objectid': 1351, 'district': 'Dantewada', 'plot_type': None, 'total_area': 0.0, 'reservatio': None, 'plot_munci': None, 'corner_plo': None, 'premium_ba': 0.0, 'addi_premi': 0.0, 'total_prem': 0.0, 'label': 'PARKING', 'tot_premiu': 0.0, 'location': 'Tekanar', 'remark': None, 'sector_inf': 'Other', 'industrial': 'TEKNAR', 'district_i': 'Dantewada', 'plotno_inf': None, 'uniqueplot': None, 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'NO', 'category_i': 'PARKING', 'quest': None, 'status_inf': None, 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': None, 'industri_2': None, 'gis_tid': None, 'shape_leng': 0.0039909309, 'shape_area': 7.771e-07}
+  {'objectid': 1349, 'district': 'Dantewada', 'plot_type': None, 'total_area': 0.0, 'reservatio': None, 'plot_munci': None, 'corner_plo': None, 'premium_ba': 0.0, 'addi_premi': 0.0, 'total_prem': 0.0, 'label': 'OPEN AREA', 'tot_premiu': 0.0, 'location': 'Tekanar', 'remark': None, 'sector_inf': 'Other', 'industrial': 'TEKNAR', 'district_i': 'Dantewada', 'plotno_inf': None, 'uniqueplot': None, 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'NO', 'category_i': 'OPEN', 'quest': None, 'status_inf': None, 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': None, 'industri_2': None, 'gis_tid': None, 'shape_leng': 0.0024688628, 'shape_area': 4.066e-07}
+  {'objectid': 1350, 'district': 'Dantewada', 'plot_type': None, 'total_area': 0.0, 'reservatio': None, 'plot_munci': None, 'corner_plo': None, 'premium_ba': 0.0, 'addi_premi': 0.0, 'total_prem': 0.0, 'label': 'PROPOSED CSIDC OFFICE', 'tot_premiu': 0.0, 'location': 'Tekanar', 'remark': None, 'sector_inf': 'Other', 'industrial': 'TEKNAR', 'district_i': 'Dantewada', 'plotno_inf': None, 'uniqueplot': None, 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'NO', 'category_i': 'PROPOSED CSIDC OFFICE', 'quest': None, 'status_inf': None, 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': None, 'industri_2': None, 'gis_tid': None, 'shape_leng': 0.0031467089, 'shape_area': 3.733e-07}
+  {'objectid': 1359, 'district': 'Dantewada', 'plot_type': None, 'total_area': 0.0, 'reservatio': None, 'plot_munci': None, 'corner_plo': None, 'premium_ba': 0.0, 'addi_premi': 0.0, 'total_prem': 0.0, 'label': 'WIDE ROAD', 'tot_premiu': 0.0, 'location': 'Tekanar', 'remark': None, 'sector_inf': 'Other', 'industrial': 'TEKNAR', 'district_i': 'Dantewada', 'plotno_inf': None, 'uniqueplot': None, 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'NO', 'category_i': 'WIDE ROAD', 'quest': None, 'status_inf': None, 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': None, 'industri_2': None, 'gis_tid': None, 'shape_leng': 0.0508965692, 'shape_area': 6.0158e-06}
+  {'objectid': 1352, 'district': 'Dantewada', 'plot_type': None, 'total_area': 0.0, 'reservatio': None, 'plot_munci': None, 'corner_plo': None, 'premium_ba': 0.0, 'addi_premi': 0.0, 'total_prem': 0.0, 'label': 'AMMENITIES', 'tot_premiu': 0.0, 'location': 'Tekanar', 'remark': None, 'sector_inf': 'Other', 'industrial': 'TEKNAR', 'district_i': 'Dantewada', 'plotno_inf': None, 'uniqueplot': None, 'plotactiva': None, 'plotupdate': None, 'plot_yesno': 'NO', 'category_i': 'AMMENITIES', 'quest': None, 'status_inf': None, 'applied_ti': None, 'alloted_ti': None, 'allotmentr': None, 'industri_1': None, 'industri_2': None, 'gis_tid': None, 'shape_leng': 0.0027346329, 'shape_area': 4.022e-07}
+
+Done!

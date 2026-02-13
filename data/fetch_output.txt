@@ -1,0 +1,71 @@
+﻿============================================================
+Fetching CSIDC Industrial Area Outer Boundaries...
+============================================================
+Total industrial areas: 36
+
+  KHAPRI KHURD              | KHAPRI KHURD    |                 | [21.572290885, 81.847854275]
+  NARAYANBAHALI             | NARAYANBAHALI   |                 | [22.654523425, 83.78742292999999]
+  AURETHI, BHATAPARA        | AURETHI         |                 | [21.74469766, 81.959358195]
+  INDUSTRIAL AREA SIYARPALI | INDUSTRIAL AREA |                 | [21.87098795, 83.495201545]
+  RIKHI                     | RIKHI           |                 | [22.979454065, 82.911064665]
+  METAL PARK PHASE II SECTO | Kanhera         |                 | [21.33355427, 81.61859407]
+  FOOD PARK SECTOR 1        | Bagaud          |                 | [20.86973756, 81.668101655]
+  PANGRIKHURD               | PANGRIKHURD     |                 | [20.91447813, 80.853169025]
+  BARBASPUR                 | BARBASPUR       |                 | [23.066321485, 82.59376209999999]
+  GANGAPUR KHURD AMBIKAPUR  |                 |                 | [23.10578921, 83.175394125]
+  TEXTILE PARK              | Kurru Nava Raip |                 | [21.101097359999997, 81.80771516499999]
+  METAL PARK PHASE II SECTO | Achholi         |                 | [21.33087593, 81.61783174]
+  TILDA                     | Bartori         |                 | [21.49574167, 81.81019810000001]
+  Industrial Area Abhanpur  | Abhanpur        |                 | [21.05891381, 81.738259325]
+  TEKNAR                    | Tekanar         |                 | [18.911097310000002, 81.35659313]
+  LAKHANPURI                | LAKHANPURI      |                 | [20.39342096, 81.43825871]
+  HATHKERA-BIDBIDA          | HATHKERA-BIDBID |                 | [21.927411705, 81.930662505]
+  KESDA                     | KESDA           |                 | [21.60354676, 81.793737375]
+  ENGINEERING PARK          |                 |                 | [21.22204358, 81.41103620999999]
+  SILPAHARI INDUSTRIAL AREA | SILPAHARI INDUS |                 | [22.019387535, 82.190881905]
+  PARASGARHI INDUSTRIAL ARE | PARASGARHI INDU |                 | [23.198749295, 82.226640395]
+  FOOD PARK SECTOR 2        | Bagaud          |                 | [20.877686869999998, 81.65460897]
+  MAHROOMKHURD              | MAHROOMKHURD    |                 | [21.225425505, 81.04768747]
+  RAIL PARK                 | RAIL PARK       |                 | [21.235024844999998, 81.39986402]
+  KHAMARIA INDUSTRIAL AREA  | KHAMARIA        |                 | [22.07793139, 81.840018135]
+  READYMADE GARMENTS PARK N | Sector-5 Nava R |                 | [21.211664255000002, 81.7942631]
+  PHARMACEUTICAL PARK NAVA  | Sector-22 Nava  |                 | [21.1702905, 81.75346849]
+  Industrial Area G-Jamgoan | G-Jamgoan       |                 | [20.968562724999998, 81.693872825]
+  FARSABAHAR                | FARSABAHAR      |                 | [22.518014665, 83.85535960499999]
+  PLASTIC PARK              | Sarora          |                 | [21.291055005, 81.593254895]
+  Industrial Area Selar     | Selar           |                 | [22.17691807, 82.248968335]
+  Industrial Area Shyamtara | Shyamtarai      |                 | [20.689788805, 81.52866384000001]
+  Food Park Sukma           | Sukma           |                 | [18.395897025, 81.70687696499999]
+  ULAKIYA                   | ULAKIYA         |                 | [22.675948769999998, 83.50954168]
+  Industrial Area Cum Food  | Chandanu Raveli |                 | [21.805078145, 81.69031928]
+  PARASIYA                  | PARASIYA        |                 | [22.004567440000002, 81.94582117499999]
+
+============================================================
+Fetching CSIDC Industrial Plots...
+============================================================
+python : Traceback (most recent call last):
+At line:1 char:1
++ python fetch_csidc_data.py 2>&1 | Out-File -FilePath 
+c:\LandWatchAi\d ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent 
+    call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\LandWatchAi\fetch_csidc_data.py", line 73, in <module>
+    plots_data = fetch_geojson("csidc_industrial_plots", 
+max_features=50)
+  File "C:\LandWatchAi\fetch_csidc_data.py", line 23, in 
+fetch_geojson
+    return json.loads(r.read().decode("utf-8"))
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\json\__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "C:\Python313\Lib\json\decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\json\decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 
+(char 0)

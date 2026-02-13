@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance Report{% endblock %}
+{% block header_title %}Compliance Report : {{ report_id }}{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-6);">
+
+    <!-- Report Header Card -->
+    <div class="card" id="report-header">
+        <div class="card-body" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 style="font-size: 1.5rem; font-weight: 700; color: #f1f5f9; margin-bottom: 4px;">Surveillance Report
+                </h2>
+                <div style="font-size: 0.9rem; color: #94a3b8;">ID: <span
+                        style="font-family: monospace; color: #cbd5e1;">{{ report_id }}</span></div>
+            </div>
+            <div style="text-align: right;">
+                <div class="badge badge-info" style="font-size: 0.8rem; margin-bottom: 6px;">AI Generated</div>
+                <div style="font-size: 0.75rem; color: #64748b;" id="report-date">Generated: --</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid-2">
+        <!-- Area Details -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <span class="title-icon"><i data-lucide="map"></i></span>
+                    Monitored Area
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                    <div>
+                        <div class="stat-label">Industrial Area</div>
+                        <div class="stat-val" id="area-name" style="font-size: 1.1rem;">--</div>
+                        <div style="font-size: 0.7rem; color: #06b6d4; margin-top: 4px;">Source: <span
+                                id="area-source">--</span></div>
+                    </div>
+                    <div>
+                        <div class="stat-label">Total Area</div>
+                        <div class="stat-val" id="area-size">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Satellite Metadata -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <span class="title-icon"><i data-lucide="satellite"></i></span>
+                    Imagery Source
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                    <div>
+                        <div class="stat-label">Satellite</div>
+                        <div class="stat-val" id="sat-source" style="font-size: 1rem;">Sentinel-2 L2A</div>
+                    </div>
+                    <div>
+                        <div class="stat-label">Acquisition Date</div>
+                        <div class="stat-val" id="sat-date" style="font-size: 1.1rem; color: #f59e0b;">--</div>
+                    </div>
+                    <div>
+                        <div class="stat-label">Cloud Cover</div>
+                        <div class="stat-val" id="cloud-cover">--</div>
+                    </div>
+                    <div>
+                        <div class="stat-label">Resolution</div>
+                        <div class="stat-val">10 m/px</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satellite Image View -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span class="title-icon"><i data-lucide="eye"></i></span>
+                Optical Analysis View (Sentinel-2 Actual Imagery)
+            </h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div id="sat-image-container"
+                style="width: 100%; height: 400px; background: #0f172a; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: 0 0 12px 12px;">
+                <span style="color: #64748b;">Loading Sentinel-2 Imagery...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Results -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span class="title-icon"><i data-lucide="activity"></i></span>
+                AI Analysis Findings
+            </h3>
+            <div id="findings-status" class="badge">Processing...</div>
+        </div>
+        <div class="card-body">
+            <div id="findings-list" style="display: flex; flex-direction: column; gap: var(--space-4);">
+                <!-- Findings injected here -->
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-white/10">
+                <h4 style="font-size: 0.9rem; font-weight: 600; color: #94a3b8; margin-bottom: 8px;">Recommendation</h4>
+                <div id="recommendation-text" style="font-size: 1rem; color: #f1f5f9; font-weight: 500;">
+                    --
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: var(--space-4);">
+        <button class="btn btn-secondary" onclick="window.print()">
+            <i data-lucide="printer"></i> Print Report
+        </button>
+        <button class="btn btn-primary" onclick="window.location.href='/map'">
+            <i data-lucide="map"></i> View on Map
+        </button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Extract area ID from report ID (RPT-DATE-AREAID)
+        const reportId = "{{ report_id }}"; // e.g. RPT-20260213-5
+        const parts = reportId.split('-');
+        const areaId = parts[2] || 1;
+
+        // Fetch report data
+        try {
+            const res = await fetch(`/api/report/generate?area_id=${areaId}`);
+            if (!res.ok) throw new Error('Report generation failed');
+
+            const data = await res.json();
+            renderReport(data);
+        } catch (e) {
+            console.error(e);
+            document.getElementById('findings-list').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <div class="empty-state-title">Error Loading Report</div>
+                    <div class="empty-state-desc">Could not fetch report data for ID: ${reportId}</div>
+                </div>
+            `;
+            document.getElementById('sat-image-container').innerHTML = '<span style="color: #ef4444;">Failed to load data</span>';
+        }
+    });
+
+    function renderReport(data) {
+        document.getElementById('report-date').textContent = new Date(data.generated_at).toLocaleString();
+
+        document.getElementById('area-name').textContent = data.area_name;
+        document.getElementById('area-source').textContent = data.area_source;
+        document.getElementById('area-size').textContent = data.analysis_summary.total_area_monitored_acres + ' acres';
+
+        document.getElementById('sat-date').textContent = data.sentinel_scene_date;
+        document.getElementById('sat-source').textContent = data.sentinel_platform || 'Sentinel-2 L2A';
+        document.getElementById('cloud-cover').textContent = data.analysis_summary.cloud_cover_percent + '%';
+
+        // Render Satellite Image
+        const imgContainer = document.getElementById('sat-image-container');
+        if (data.sentinel_image_url) {
+            imgContainer.innerHTML = `<img src="${data.sentinel_image_url}" style="width: 100%; height: 100%; object-fit: cover; display: block;">`;
+        } else {
+            imgContainer.innerHTML = `<div style="color: #64748b; text-align: center;">Imagery Unavailable<br><span style="font-size: 0.8em">Cloud Cover: ${data.analysis_summary.cloud_cover_percent}% or No Access</span></div>`;
+        }
+
+        document.getElementById('recommendation-text').textContent = data.recommendation;
+
+        const statusBadge = document.getElementById('findings-status');
+        if (data.analysis_summary.change_detected) {
+            statusBadge.className = 'badge badge-critical';
+            statusBadge.textContent = `${data.analysis_summary.findings_count} Issues Detected`;
+            document.getElementById('recommendation-text').style.color = '#ef4444';
+        } else {
+            statusBadge.className = 'badge badge-low';
+            statusBadge.textContent = 'Compliant';
+            document.getElementById('recommendation-text').style.color = '#10b981';
+        }
+
+        const findingsContainer = document.getElementById('findings-list');
+        if (!data.findings || data.findings.length === 0) {
+            findingsContainer.innerHTML = `
+                <div class="empty-state" style="padding: 20px;">
+                    <div class="empty-state-icon" style="font-size: 2rem;">✅</div>
+                    <div class="empty-state-title" style="font-size: 1rem;">No Deviations Detected</div>
+                    <div class="empty-state-desc">The monitored area matches the reference CSIDC GIS boundaries.</div>
+                </div>
+            `;
+        } else {
+            findingsContainer.innerHTML = data.findings.map(f => `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span class="badge badge-${f.severity}">${f.type.replace('_', ' ').toUpperCase()}</span>
+                        <span style="font-size: 0.8rem; color: #94a3b8;">${Math.round(f.confidence * 100)}% Confidence</span>
+                    </div>
+                    <div style="font-weight: 500; font-size: 1rem; color: #f1f5f9; margin-bottom: 4px;">${f.description}</div>
+                    <div style="font-size: 0.8rem; color: #64748b;">
+                        📍 Location: ${f.location.lat.toFixed(5)}, ${f.location.lng.toFixed(5)}
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+</script>
+<style>
+    .stat-label {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-bottom: 4px;
+    }
+
+    .stat-val {
+        font-weight: 700;
+        color: #f1f5f9;
+    }
+</style>
+{% endblock %}
