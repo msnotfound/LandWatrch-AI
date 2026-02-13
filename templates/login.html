@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="LandWatch AI - Login to the Automated Industrial Land Monitoring System for CSIDC">
+    <title>LandWatch AI — Sign In</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🛰️</text></svg>">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-deepest: #0a0e17;
+            --bg-deep: #0f1523;
+            --bg-card: #141b2d;
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --primary-500: #0d8de0;
+            --primary-400: #28a9f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+        }
+
+        html {
+            font-size: 14px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-deepest);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Background animation */
+        .bg-scene {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bg-scene::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(ellipse at 30% 50%, rgba(13, 141, 224, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 30%, rgba(6, 182, 212, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+            animation: bg-drift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes bg-drift {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            100% {
+                transform: translate(-3%, 2%) rotate(2deg);
+            }
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            background-image:
+                linear-gradient(rgba(13, 141, 224, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(13, 141, 224, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        /* Floating satellites */
+        .satellite {
+            position: fixed;
+            font-size: 1.5rem;
+            opacity: 0.15;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .satellite:nth-child(1) {
+            top: 15%;
+            left: 10%;
+            animation: float 12s ease-in-out infinite;
+        }
+
+        .satellite:nth-child(2) {
+            top: 70%;
+            left: 80%;
+            animation: float 15s ease-in-out 3s infinite;
+        }
+
+        .satellite:nth-child(3) {
+            top: 30%;
+            left: 75%;
+            animation: float 18s ease-in-out 6s infinite;
+        }
+
+        .satellite:nth-child(4) {
+            top: 80%;
+            left: 20%;
+            animation: float 14s ease-in-out 2s infinite;
+        }
+
+        .satellite:nth-child(5) {
+            top: 50%;
+            left: 50%;
+            animation: float 16s ease-in-out 4s infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(20px, -15px) rotate(5deg);
+            }
+
+            50% {
+                transform: translate(-10px, 10px) rotate(-3deg);
+            }
+
+            75% {
+                transform: translate(15px, 20px) rotate(7deg);
+            }
+        }
+
+        /* Scan lines */
+        .scan-line {
+            position: fixed;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(13, 141, 224, 0.3), transparent);
+            z-index: 1;
+            pointer-events: none;
+            animation: scan 8s linear infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                top: -2px;
+                opacity: 0;
+            }
+
+            5% {
+                opacity: 1;
+            }
+
+            95% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100vh;
+                opacity: 0;
+            }
+        }
+
+        /* Layout */
+        .login-layout {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Left panel — Hero */
+        .hero-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 80px;
+            position: relative;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: rgba(13, 141, 224, 0.1);
+            border: 1px solid rgba(13, 141, 224, 0.2);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-400);
+            margin-bottom: 24px;
+            width: fit-content;
+        }
+
+        .hero-badge .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .hero-title .gradient {
+            background: linear-gradient(135deg, var(--primary-400), var(--accent-cyan), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 520px;
+            margin-bottom: 40px;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .hero-stat {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hero-stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-stat-value.blue {
+            color: var(--primary-400);
+        }
+
+        .hero-stat-value.green {
+            color: var(--accent-green);
+        }
+
+        .hero-stat-value.cyan {
+            color: var(--accent-cyan);
+        }
+
+        .hero-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Right panel — Login */
+        .login-panel {
+            width: 480px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            background: rgba(15, 21, 35, 0.6);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-left: 1px solid var(--border-subtle);
+        }
+
+        .login-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .login-logo-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary-500), var(--accent-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 24px rgba(13, 141, 224, 0.3);
+        }
+
+        .login-logo-text {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .login-heading {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .login-subheading {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 32px;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(13, 141, 224, 0.15);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .form-checkbox input {
+            accent-color: var(--primary-500);
+        }
+
+        .form-link {
+            font-size: 0.8rem;
+            color: var(--primary-400);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .form-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-500), #0a6fb0);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .btn-login:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(13, 141, 224, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .login-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        .btn-demo {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-demo:hover {
+            background: var(--bg-card);
+            border-color: var(--primary-500);
+            color: var(--text-primary);
+        }
+
+        .login-footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+
+        .login-footer a {
+            color: var(--primary-400);
+            text-decoration: none;
+        }
+
+        /* Error state */
+        .form-error {
+            color: var(--accent-red);
+            font-size: 0.75rem;
+            margin-top: 6px;
+            display: none;
+        }
+
+        .form-input.error {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+
+        /* Loading */
+        .btn-login.loading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Animations */
+        .animate-in {
+            animation: fadeUp 0.6s ease-out both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delay-1 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            animation-delay: 0.3s;
+        }
+
+        .delay-4 {
+            animation-delay: 0.4s;
+        }
+
+        .delay-5 {
+            animation-delay: 0.5s;
+        }
+
+        .delay-6 {
+            animation-delay: 0.6s;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hero-panel {
+                display: none;
+            }
+
+            .login-panel {
+                width: 100%;
+                border-left: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background -->
+    <div class="bg-scene"></div>
+    <div class="grid-overlay"></div>
+    <div class="scan-line"></div>
+
+    <!-- Floating elements -->
+    <div class="satellite">🛰️</div>
+    <div class="satellite">📡</div>
+    <div class="satellite">🌍</div>
+    <div class="satellite">⭐</div>
+    <div class="satellite">✨</div>
+
+    <div class="login-layout">
+        <!-- Hero Panel -->
+        <div class="hero-panel">
+            <div class="hero-badge animate-in">
+                <span class="pulse"></span>
+                XCELERATE Money Matters 2026
+            </div>
+
+            <h1 class="hero-title animate-in delay-1">
+                <span class="gradient">Satellite-Powered</span><br>
+                Land Compliance<br>
+                Monitoring
+            </h1>
+
+            <p class="hero-subtitle animate-in delay-2">
+                Replace expensive manual drone surveys with AI-powered satellite imagery analysis.
+                Monitor 30+ industrial areas continuously with 95% cost reduction.
+            </p>
+
+            <div class="hero-stats animate-in delay-3">
+                <div class="hero-stat">
+                    <div class="hero-stat-value blue">95%</div>
+                    <div class="hero-stat-label">Cost Reduction</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value green">90%+</div>
+                    <div class="hero-stat-label">Detection Accuracy</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value cyan">50×</div>
+                    <div class="hero-stat-label">More Frequent</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Panel -->
+        <div class="login-panel">
+            <div class="login-logo animate-in delay-2">
+                <div class="login-logo-icon">🛰️</div>
+                <span class="login-logo-text">LandWatch AI</span>
+            </div>
+
+            <h2 class="login-heading animate-in delay-3">Welcome back</h2>
+            <p class="login-subheading animate-in delay-3">Sign in to access the CSIDC monitoring dashboard</p>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group animate-in delay-4">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" class="form-input" placeholder="officer@csidc.gov.in"
+                        value="admin@csidc.gov.in" autocomplete="email">
+                    <div class="form-error" id="email-error">Please enter a valid email address</div>
+                </div>
+
+                <div class="form-group animate-in delay-4">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" value="admin123"
+                        autocomplete="current-password">
+                    <div class="form-error" id="password-error">Password is required</div>
+                </div>
+
+                <div class="form-row animate-in delay-5">
+                    <label class="form-checkbox">
+                        <input type="checkbox" checked>
+                        Remember me
+                    </label>
+                    <a href="#" class="form-link">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="btn-login animate-in delay-5" id="btn-login">
+                    Sign In →
+                </button>
+            </form>
+
+            <div class="login-divider animate-in delay-6">or</div>
+
+            <button class="btn-demo animate-in delay-6" onclick="handleDemoLogin()">
+                🚀 Access Demo Dashboard
+            </button>
+
+            <div class="login-footer animate-in delay-6">
+                <p>Chhattisgarh State Industrial Development Corporation</p>
+                <p>Powered by <a href="#">Sentinel-2</a> Satellite Data & AI</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            btn.classList.add('loading');
+            btn.innerHTML = '<span class="spinner"></span> Authenticating...';
+
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+        }
+
+        function handleDemoLogin() {
+            const btn = document.querySelector('.btn-demo');
+            btn.innerHTML = '⏳ Loading demo data...';
+            btn.style.borderColor = 'var(--accent-green)';
+            btn.style.color = 'var(--accent-green)';
+
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Map View{% endblock %}
+{% block header_title %}Map View{% endblock %}
+{% block breadcrumb %}Geospatial Monitoring{% endblock %}
+
+{% block content %}
+<div style="display: flex; gap: var(--space-6); height: calc(100vh - var(--header-height) - var(--space-16));">
+    <!-- Map Panel -->
+    <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <span class="title-icon"><i data-lucide="globe-2"></i></span>
+                Industrial Area Map — Chhattisgarh
+            </h2>
+            <div class="card-actions">
+                <div class="filters-bar">
+                    <div class="filter-chip active" data-filter="all" onclick="filterMapAreas('all', this)">All Areas
+                    </div>
+                    <div class="filter-chip" data-filter="high" onclick="filterMapAreas('high', this)">🔴 High Risk
+                    </div>
+                    <div class="filter-chip" data-filter="medium" onclick="filterMapAreas('medium', this)">🟡 Medium
+                    </div>
+                    <div class="filter-chip" data-filter="low" onclick="filterMapAreas('low', this)">🟢 Low Risk</div>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="toggleSatelliteView()" id="btn-sat-toggle">
+                    <i data-lucide="satellite"></i> Satellite
+                </button>
+                <button class="btn btn-sm btn-detect" onclick="runFullDetection()">
+                    <i data-lucide="scan"></i> Run Detection
+                </button>
+            </div>
+        </div>
+        <div class="card-body no-pad" style="flex: 1;">
+            <div id="full-map" style="width: 100%; height: 100%; min-height: 500px;"></div>
+        </div>
+    </div>
+
+    <!-- Side Panel -->
+    <div style="width: 360px; display: flex; flex-direction: column; gap: var(--space-4);">
+        <!-- Selected Area Info -->
+        <div class="card" id="area-info-panel">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span class="title-icon"><i data-lucide="info"></i></span>
+                    Area Details
+                </h2>
+            </div>
+            <div class="card-body" id="area-info-content">
+                <div class="empty-state" style="padding: var(--space-8);">
+                    <div class="empty-state-icon">📍</div>
+                    <div class="empty-state-title">Select an Area</div>
+                    <div class="empty-state-desc">Click on any industrial area on the map to view its details.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plot List for Selected Area -->
+        <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span class="title-icon"><i data-lucide="layout-grid"></i></span>
+                    Plots
+                </h2>
+                <select class="select-input" id="plot-filter" onchange="filterPlots(this.value)">
+                    <option value="all">All Status</option>
+                    <option value="compliant">Compliant</option>
+                    <option value="violation">Violation</option>
+                    <option value="vacant">Vacant</option>
+                    <option value="under_review">Under Review</option>
+                </select>
+            </div>
+            <div class="card-body no-pad" id="plots-list" style="flex: 1; overflow-y: auto; max-height: 400px;">
+                <div class="empty-state" style="padding: var(--space-8);">
+                    <div class="empty-state-icon">🏗️</div>
+                    <div class="empty-state-title">No Area Selected</div>
+                    <div class="empty-state-desc">Select an area to see its plots.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let fullMap, selectedAreaId = null, plotMarkers = [], isSatView = false;
+    let areasData = [], plotsData = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize map
+        fullMap = L.map('full-map', {
+            zoomControl: true,
+            attributionControl: false
+        }).setView([21.5, 81.8], 8);
+
+        const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        });
+
+        const satTiles = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19
+        });
+
+        darkTiles.addTo(fullMap);
+
+        window.mapLayers = { dark: darkTiles, sat: satTiles, current: 'dark' };
+
+        // Load areas
+        const areasRes = await fetch('/api/areas');
+        areasData = await areasRes.json();
+
+        renderMapAreas(areasData);
+
+        // Check URL params for pre-selected area
+        const params = new URLSearchParams(window.location.search);
+        const areaParam = params.get('area');
+        if (areaParam) {
+            selectArea(parseInt(areaParam));
+        }
+    });
+
+    function renderMapAreas(areas) {
+        areas.forEach(area => {
+            const color = area.risk_level === 'high' ? '#ef4444' :
+                area.risk_level === 'medium' ? '#f59e0b' : '#10b981';
+
+            // Area boundary circle
+            const circle = L.circle(area.center, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.12,
+                radius: area.area_acres * 4,
+                weight: 2,
+                dashArray: '5, 8'
+            }).addTo(fullMap);
+
+            // Pulsing marker
+            const icon = L.divIcon({
+                className: '',
+                html: `
+                <div style="position: relative; width: 40px; height: 40px;">
+                    <div style="
+                        position: absolute; inset: 0;
+                        background: ${color};
+                        border-radius: 50%;
+                        opacity: 0.2;
+                        animation: map-pulse 2s ease-out infinite;
+                    "></div>
+                    <div style="
+                        position: absolute;
+                        top: 50%; left: 50%;
+                        transform: translate(-50%, -50%);
+                        width: 24px; height: 24px;
+                        background: ${color};
+                        border-radius: 50%;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 11px; font-weight: 800; color: white;
+                        box-shadow: 0 0 16px ${color}80;
+                        border: 2px solid rgba(255,255,255,0.4);
+                        cursor: pointer;
+                    ">${area.violations_count}</div>
+                </div>
+            `,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            const marker = L.marker(area.center, { icon }).addTo(fullMap);
+            marker.on('click', () => selectArea(area.id));
+
+            area._circle = circle;
+            area._marker = marker;
+        });
+
+        // Inject pulse animation
+        if (!document.getElementById('map-pulse-style')) {
+            const style = document.createElement('style');
+            style.id = 'map-pulse-style';
+            style.textContent = `
+            @keyframes map-pulse {
+                0% { transform: scale(0.8); opacity: 0.4; }
+                100% { transform: scale(2.5); opacity: 0; }
+            }
+        `;
+            document.head.appendChild(style);
+        }
+    }
+
+    async function selectArea(areaId) {
+        selectedAreaId = areaId;
+        const area = areasData.find(a => a.id === areaId);
+        if (!area) return;
+
+        // Zoom to area
+        fullMap.setView(area.center, 12, { animate: true });
+
+        // Show area info
+        const color = area.risk_level === 'high' ? '#ef4444' :
+            area.risk_level === 'medium' ? '#f59e0b' : '#10b981';
+
+        document.getElementById('area-info-content').innerHTML = `
+        <div style="margin-bottom: var(--space-4);">
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 4px;">${area.name}</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">${area.location}</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+            <div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Total Plots</div>
+                <div style="font-size: 1.4rem; font-weight: 800;">${area.total_plots}</div>
+            </div>
+            <div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Area</div>
+                <div style="font-size: 1.4rem; font-weight: 800;">${area.area_acres} ac</div>
+            </div>
+            <div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Compliance</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: ${color};">${area.compliance_rate}%</div>
+            </div>
+            <div>
+                <div style="font-size: 0.7rem; color: var(--text-muted);">Violations</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-red);">${area.violations_count}</div>
+            </div>
+        </div>
+        <div style="margin-bottom: var(--space-2);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
+                <span style="color: var(--text-muted);">Compliance Rate</span>
+                <span style="color: ${color}; font-weight: 600;">${area.compliance_rate}%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill ${progressColorClass(area.compliance_rate)}" style="width: ${area.compliance_rate}%;"></div>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3);">
+            <span class="badge badge-${area.risk_level === 'high' ? 'critical' : area.risk_level}">${area.risk_level.toUpperCase()} RISK</span>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">Last scan: ${area.last_scan}</span>
+        </div>
+    `;
+
+        // Load plots
+        const plotsRes = await fetch(`/api/plots?area_id=${areaId}`);
+        plotsData = await plotsRes.json();
+        renderPlots(plotsData);
+        renderPlotMarkers(plotsData);
+    }
+
+    function renderPlots(plots) {
+        const container = document.getElementById('plots-list');
+        if (!plots.length) {
+            container.innerHTML = '<div class="empty-state" style="padding: var(--space-8);"><div class="empty-state-icon">📦</div><div class="empty-state-title">No Plots Found</div></div>';
+            return;
+        }
+
+        const statusColors = {
+            'compliant': 'var(--accent-green)',
+            'violation': 'var(--accent-red)',
+            'under_review': 'var(--accent-amber)',
+            'vacant': 'var(--accent-purple)'
+        };
+
+        const statusBadge = {
+            'compliant': 'badge-low',
+            'violation': 'badge-critical',
+            'under_review': 'badge-medium',
+            'vacant': 'badge-info'
+        };
+
+        container.innerHTML = plots.slice(0, 50).map(plot => `
+        <div class="area-item" style="padding: var(--space-3) var(--space-4);">
+            <div class="area-color" style="background: ${statusColors[plot.status] || 'var(--text-muted)'}; height: 28px;"></div>
+            <div class="area-info" style="min-width: 0;">
+                <div class="area-name" style="font-size: 0.8rem;">${plot.plot_number}</div>
+                <div class="area-location truncate" style="font-size: 0.7rem;">${plot.industry_name}</div>
+            </div>
+            <span class="badge ${statusBadge[plot.status] || 'badge-info'}">${plot.status.replace('_', ' ')}</span>
+        </div>
+    `).join('');
+    }
+
+    function renderPlotMarkers(plots) {
+        // Clear existing
+        plotMarkers.forEach(m => fullMap.removeLayer(m));
+        plotMarkers = [];
+
+        plots.forEach(plot => {
+            if (!plot.boundary || plot.boundary.length < 4) return;
+
+            const color = plot.status === 'compliant' ? '#10b981' :
+                plot.status === 'violation' ? '#ef4444' :
+                    plot.status === 'vacant' ? '#8b5cf6' : '#f59e0b';
+
+            // Draw plot boundary
+            const latlngs = plot.boundary.map(b => [b[0], b[1]]);
+            const poly = L.polygon(latlngs, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                weight: 1.5
+            }).addTo(fullMap);
+
+            poly.bindPopup(`
+            <div style="font-family: 'Inter', sans-serif; min-width: 180px;">
+                <div style="font-weight: 700; font-size: 13px; color: #f1f5f9;">${plot.plot_number}</div>
+                <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">${plot.industry_name}</div>
+                <div style="font-size: 11px;">
+                    <div>Area: ${plot.reference_area_sqm} sqm</div>
+                    <div>Current: ${plot.current_area_sqm} sqm</div>
+                    <div style="color: ${color}; font-weight: 600; margin-top: 4px; text-transform: uppercase;">${plot.status.replace('_', ' ')}</div>
+                </div>
+            </div>
+        `);
+
+            plotMarkers.push(poly);
+        });
+    }
+
+    function filterPlots(status) {
+        if (!plotsData.length) return;
+        const filtered = status === 'all' ? plotsData : plotsData.filter(p => p.status === status);
+        renderPlots(filtered);
+        renderPlotMarkers(filtered);
+    }
+
+    function filterMapAreas(risk, chip) {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+
+        areasData.forEach(area => {
+            const show = risk === 'all' || area.risk_level === risk;
+            if (area._circle) {
+                if (show) fullMap.addLayer(area._circle);
+                else fullMap.removeLayer(area._circle);
+            }
+            if (area._marker) {
+                if (show) fullMap.addLayer(area._marker);
+                else fullMap.removeLayer(area._marker);
+            }
+        });
+    }
+
+    function toggleSatelliteView() {
+        const btn = document.getElementById('btn-sat-toggle');
+        if (window.mapLayers.current === 'dark') {
+            fullMap.removeLayer(window.mapLayers.dark);
+            window.mapLayers.sat.addTo(fullMap);
+            window.mapLayers.current = 'sat';
+            btn.innerHTML = '<i data-lucide="moon"></i> Dark Mode';
+        } else {
+            fullMap.removeLayer(window.mapLayers.sat);
+            window.mapLayers.dark.addTo(fullMap);
+            window.mapLayers.current = 'dark';
+            btn.innerHTML = '<i data-lucide="satellite"></i> Satellite';
+        }
+        lucide.createIcons();
+    }
+
+    async function runFullDetection() {
+        showToast('AI Detection Started', 'Processing satellite imagery for all monitored areas...', 'detection');
+        for (const area of areasData) {
+            try {
+                const res = await fetch(`/api/detection/run?area_id=${area.id}`);
+                const data = await res.json();
+            } catch (e) { }
+        }
+        setTimeout(() => {
+            showToast('Detection Complete', `Analysis complete for ${areasData.length} areas. Check alerts for new violations.`, 'success');
+        }, 1500);
+    }
+</script>
+{% endblock %}

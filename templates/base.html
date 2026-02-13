@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LandWatch AI - Automated Industrial Land Monitoring & Compliance System for CSIDC">
+    <title>{% block title %}LandWatch AI{% endblock %} | Industrial Land Monitoring</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🛰️</text></svg>">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+
+    <!-- Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <!-- ═══ Sidebar ═══ -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-icon">🛰️</div>
+                <div class="brand-text">
+                    <span class="brand-name">LandWatch AI</span>
+                    <span class="brand-subtitle">CSIDC Monitoring</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">Overview</div>
+                <a href="/" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                    <span class="nav-icon"><i data-lucide="layout-dashboard"></i></span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/map" class="nav-item {% if active_page == 'map' %}active{% endif %}" id="nav-map">
+                    <span class="nav-icon"><i data-lucide="map"></i></span>
+                    <span>Map View</span>
+                </a>
+                <a href="/satellite" class="nav-item {% if active_page == 'satellite' %}active{% endif %}" id="nav-satellite">
+                    <span class="nav-icon"><i data-lucide="satellite"></i></span>
+                    <span>Satellite Feed</span>
+                </a>
+
+                <div class="nav-section-label">Compliance</div>
+                <a href="/alerts" class="nav-item {% if active_page == 'alerts' %}active{% endif %}" id="nav-alerts">
+                    <span class="nav-icon"><i data-lucide="bell-ring"></i></span>
+                    <span>Alerts</span>
+                    <span class="nav-badge" id="alert-count">0</span>
+                </a>
+                <a href="/reports" class="nav-item {% if active_page == 'reports' %}active{% endif %}" id="nav-reports">
+                    <span class="nav-icon"><i data-lucide="file-text"></i></span>
+                    <span>Reports</span>
+                </a>
+                <a href="/analytics" class="nav-item {% if active_page == 'analytics' %}active{% endif %}" id="nav-analytics">
+                    <span class="nav-icon"><i data-lucide="bar-chart-3"></i></span>
+                    <span>Analytics</span>
+                </a>
+
+                <div class="nav-section-label">System</div>
+                <a href="#" class="nav-item" id="nav-detection">
+                    <span class="nav-icon"><i data-lucide="scan"></i></span>
+                    <span>Run Detection</span>
+                </a>
+                <a href="#" class="nav-item" id="nav-settings">
+                    <span class="nav-icon"><i data-lucide="settings"></i></span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-status">
+                    <span class="status-dot"></span>
+                    <span>Sentinel-2 Feed Active</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ═══ Main ═══ -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="btn-ghost" id="sidebar-toggle" style="display:none;">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div>
+                        <h1 class="header-title">{% block header_title %}Dashboard{% endblock %}</h1>
+                        <div class="header-breadcrumb">
+                            <span>LandWatch AI</span>
+                            <span class="separator">/</span>
+                            <span>{% block breadcrumb %}Overview{% endblock %}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-bar" id="search-bar">
+                        <span class="search-icon"><i data-lucide="search"></i></span>
+                        <input type="text" placeholder="Search areas, plots, violations..." id="global-search">
+                    </div>
+                    <button class="header-action" data-tooltip="Notifications" id="btn-notifications">
+                        <i data-lucide="bell"></i>
+                        <span class="action-badge" id="notif-badge">3</span>
+                    </button>
+                    <button class="header-action" data-tooltip="Run AI Scan" id="btn-scan">
+                        <i data-lucide="radar"></i>
+                    </button>
+                    <div class="user-avatar" data-tooltip="Admin User">AU</div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="page-content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Base JS -->
+    <script>
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // Toast notification system
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const icons = {
+                'success': '✅',
+                'error': '❌',
+                'warning': '⚠️',
+                'info': 'ℹ️',
+                'detection': '🛰️'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = 'toast animate-slide-in';
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || icons.info}</span>
+                <div class="toast-body">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // Fetch alert count for badge
+        async function updateAlertBadge() {
+            try {
+                const res = await fetch('/api/alerts?status=unread');
+                const alerts = await res.json();
+                const badge = document.getElementById('alert-count');
+                const notifBadge = document.getElementById('notif-badge');
+                if (badge) badge.textContent = alerts.length;
+                if (notifBadge) notifBadge.textContent = alerts.length;
+            } catch (e) {
+                console.error('Failed to update alerts:', e);
+            }
+        }
+        updateAlertBadge();
+
+        // Mark active nav based on current path
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('href') === currentPath) {
+                item.classList.add('active');
+            }
+        });
+
+        // Run Detection trigger
+        document.getElementById('btn-scan')?.addEventListener('click', async () => {
+            showToast('AI Scan Initiated', 'Running detection on all monitored areas...', 'detection');
+            try {
+                const res = await fetch('/api/detection/run?area_id=1');
+                const data = await res.json();
+                setTimeout(() => {
+                    showToast('Scan Complete', `${data.results.plots_analyzed} plots analyzed, ${data.results.encroachments_detected} encroachments found`, 'success');
+                }, 2000);
+            } catch (e) {
+                showToast('Scan Failed', 'Unable to run detection. Try again.', 'error');
+            }
+        });
+
+        document.getElementById('nav-detection')?.addEventListener('click', async (e) => {
+            e.preventDefault();
+            document.getElementById('btn-scan')?.click();
+        });
+
+        // Number formatting
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // Color for compliance rate
+        function complianceColor(rate) {
+            if (rate >= 85) return 'var(--accent-green)';
+            if (rate >= 70) return 'var(--accent-amber)';
+            return 'var(--accent-red)';
+        }
+
+        // Progress bar color class
+        function progressColorClass(rate) {
+            if (rate >= 85) return 'green';
+            if (rate >= 70) return 'amber';
+            return 'red';
+        }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
